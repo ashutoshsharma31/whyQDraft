@@ -86,5 +86,30 @@ public class TokenDao {
 		}
 		return tokenList;
 	}
+	
+	public List<Token> getRecieptNTokenDataForOrder(String orderId) {
+
+		List<Token> tokenList = new ArrayList<Token>();
+		try {
+			
+			String query = "select tokenid, orderid, orderlineid, status from token where orderid = '"+orderId+"'";
+			Statement stmt = connection.createStatement();
+			ResultSet rs = stmt.executeQuery(query);
+			while (rs.next()) {
+				Token token = new Token();
+				token.setId(rs.getInt("tokenid"));
+				token.setOrderId(rs.getString("orderid"));
+				token.setOrderLineId(rs.getInt("orderlineid"));
+				token.setStatus(rs.getString("status"));
+				tokenList.add(token);
+			}
+
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		return tokenList;
+	}
+	
+	
 
 }

@@ -45,7 +45,7 @@ public class OrderDataDao {
 	public void saveOrder(OrderInformation orderInformation) {
 
 		try {
-			String query = "INSERT INTO orderdata (ordernum,username,cafeid,numofitem,totalamount,paymethod,paystatus,maxnumber) VALUES (?,?,?,?,?,?,?,?)";
+			String query = "INSERT INTO orderdata (ordernum,username,cafeid,numofitem,totalamount,paymethod,paystatus,maxnumber,createdttm) VALUES (?,?,?,?,?,?,?,?,now())";
 			PreparedStatement preparedStatement = connection.prepareStatement(query);
 			preparedStatement.setString(1, orderInformation.getOrderNum());
 			preparedStatement.setString(2, orderInformation.getGupshupObject().getSender());
@@ -66,7 +66,7 @@ public class OrderDataDao {
 		List<CartItem> cartItemList = orderInformation.getOrderList();
 		try {
 			for (CartItem cartItem : cartItemList) {
-				String query = "insert into orderline(orderid,itemid,size,unitprice,quantity,totalprice) values (?,?,?,?,?,?)";
+				String query = "insert into orderline(orderid,itemid,size,unitprice,quantity,totalprice,createdtmt) values (?,?,?,?,?,?,now())";
 				PreparedStatement preparedStatement = connection.prepareStatement(query);
 				preparedStatement.setString(1, orderInformation.getOrderNum());
 				preparedStatement.setInt(2, cartItem.getMenuItem().getItemid());
@@ -89,7 +89,7 @@ public class OrderDataDao {
 	
 	public void updateOrderStatus(OrderInformation orderInformation) {
 		try {
-			String query = "update orderinfo set paystatus = ? where orderid = ?";
+			String query = "update orderinfo set paystatus = ?, paymentdttm=now() where orderid = ?";
 			PreparedStatement preparedStatement = connection.prepareStatement(query);
 			preparedStatement.setString(1, "COMPLETE");
 			preparedStatement.setString(2, orderInformation.getOrderNum());

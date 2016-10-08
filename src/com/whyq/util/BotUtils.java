@@ -101,7 +101,7 @@ public class BotUtils {
 		ArrayList<JSONObject> options = new ArrayList<JSONObject>();
 		String url = serverPath + "/payment.jsp?&orderInformation=" + gson.toJson(orderInformation) + "&contextObject="
 				+ orderInformation.getGupshupObject().getContextObj();
-		options.add(new JSONObject().put("type", "url").put("title", "Pay Online").put("url", url));
+		options.add(new JSONObject().put("type", "url").put("title", "Pay Online").put("url", url).put("webview_height_ratio", "tall"));
 		options.add(new JSONObject().put("type", "text").put("title", "Cash"));
 		my.put("options", options).put("msgid", "3er45");
 		return my;

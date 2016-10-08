@@ -26,7 +26,7 @@ public class OrderDao {
 
 	public void getMaxOrderNumb() {
 		try {
-			String query = "insert into orderinfo(orderid,username,cafeid,numofitem,totalamount, paymethod,paystatus) values (?,?,?,?,?,?,?)";
+			String query = "seelct * from orderinfo";
 
 	        Statement stmt = connection.createStatement();
 	        ResultSet rs = stmt.executeQuery(query);
@@ -43,7 +43,7 @@ public class OrderDao {
 	public void saveOrder(OrderInformation orderInformation) {
 
 		try {
-			String query = "insert into orderinfo(orderid,username,cafeid,numofitem,totalamount, paymethod,paystatus) values (?,?,?,?,?,?,?)";
+			String query = "insert into orderinfo(orderid,username,cafeid,numofitem,totalamount, paymethod,paystatus,createdttm) values (?,?,?,?,?,?,?,now())";
 			PreparedStatement preparedStatement = connection.prepareStatement(query);
 			preparedStatement.setString(1, orderInformation.getOrderNum());
 			preparedStatement.setString(2, orderInformation.getGupshupObject().getSender());
@@ -86,7 +86,7 @@ public class OrderDao {
 
 	public void updateOrderStatus(OrderInformation orderInformation) {
 		try {
-			String query = "update orderinfo set paystatus = ? where orderid = ?";
+			String query = "update orderinfo set paystatus = ? , paymentdttm=now() where orderid = ?";
 			PreparedStatement preparedStatement = connection.prepareStatement(query);
 			preparedStatement.setString(1, "COMPLETE");
 			preparedStatement.setString(2, orderInformation.getOrderNum());

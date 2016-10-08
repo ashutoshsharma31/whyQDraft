@@ -13,6 +13,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import com.google.gson.Gson;
 import com.whyq.dao.OrderDao;
+import com.whyq.dao.OrderDataDao;
 import com.whyq.dao.TokenDao;
 import com.whyq.model.CartItem;
 import com.whyq.model.OrderInformation;
@@ -33,7 +34,7 @@ public class Purchase extends HttpServlet {
 
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
 		try {
-			OrderDao orderDao = new OrderDao();
+			OrderDataDao orderDataDao = new OrderDataDao();
 			TokenDao tokenDao = new TokenDao();
 
 			String strContext = request.getParameter("contextObject");
@@ -42,7 +43,7 @@ public class Purchase extends HttpServlet {
 
 			OrderInformation orderInformation = gson.fromJson(URLDecoder.decode(strOrder, "UTF-8"),
 					OrderInformation.class);
-			orderDao.updateOrderStatus(orderInformation);
+			orderDataDao.updateOrderStatus(orderInformation);
 			createTokens(orderInformation);
 			sendMessage(strContext);
 			String serverPath = request.getRequestURL().substring(0,
