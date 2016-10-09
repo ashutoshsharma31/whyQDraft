@@ -8,6 +8,8 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.whyq.model.CartItem;
+import com.whyq.model.OrderInformation;
 import com.whyq.model.Token;
 import com.whyq.util.DbUtil;
 
@@ -110,6 +112,22 @@ public class TokenDao {
 		return tokenList;
 	}
 	
+	public static void createTokens(OrderInformation orderInformation) {
+		OrderDao orderDao = new OrderDao();
+		List<CartItem> cartList = orderInformation.getOrderList();
+		for (CartItem cartItem : cartList) {
+			TokenDao tokenDao = new TokenDao();
+			int maxToken = tokenDao.getMaxTokenNum() + 1;
+			Token token = new Token();
+			token.setOrderId(orderInformation.getOrderNum());
+			token.setOrderLineId(orderDao.getOrderLineId(orderInformation.getOrderNum(),
+					cartItem.getMenuItem().getItemid(), cartItem.getMenuItem().getSizeable()));
+			token.setStatus("PENDING");
+			tokenDao.saveToken(token);
+			
+			System.out.println("TOKEN " + token.toString());
+		}
+	}
 	
 
 }

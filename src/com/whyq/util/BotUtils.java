@@ -9,19 +9,25 @@ import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
 
+import org.apache.log4j.Logger;
 import org.json.JSONObject;
 
 import com.google.gson.Gson;
+import com.whyq.controller.WorkServlet;
 import com.whyq.dao.CafeDao;
+import com.whyq.dao.ConfigDao;
 import com.whyq.dao.OrderDao;
 import com.whyq.dao.OrderDataDao;
 import com.whyq.model.Cafe;
 import com.whyq.model.CartItem;
+import com.whyq.model.Config;
+import com.whyq.model.GupshupObject;
 import com.whyq.model.OrderInformation;
 import com.whyq.model.Token;
 import com.whyq.session.SessionData;
 
 public class BotUtils {
+	static Logger log = Logger.getLogger(BotUtils.class.getName());
 
 	public static JSONObject quickReplyTest(String message, ArrayList<String> options, String msgid) {
 		// String[] str = { "Red", "Green", "Yellow", "Blue" };
@@ -36,29 +42,8 @@ public class BotUtils {
 
 	public static JSONObject coralView(List<CartItem> orderList, String serverPath) {
 
-		/*
-		 * { "type": "catalogue", "msgid": "cat_212", "items": [{ "title":
-		 * "White T Shirt", "subtitle":
-		 * "Soft cotton t-shirt \nXs, S, M, L \n$10", "imgurl":
-		 * "http://petersapparel.parseapp.com/img/item100-thumb.png", "options":
-		 * [ { "type": "url", "title": "View Details", "url":
-		 * "http://petersapparel.parseapp.com/img/item100-thumb.png" }, {
-		 * "type": "text", "title": "Buy" }
-		 * 
-		 * ] }, { "title": "Grey T Shirt", "subtitle":
-		 * "Soft cotton t-shirt \nXs, S, M, L \n$12", "imgurl":
-		 * "http://petersapparel.parseapp.com/img/item101-thumb.png", "options":
-		 * [ { "type": "url", "title": "View Details", "url":
-		 * "http://petersapparel.parseapp.com/img/item101-thumb.png" }, {
-		 * "type": "text", "title": "Buy" }] }] }
-		 */
-
-		// List arrOptions = Arrays.asList(options);
 		JSONObject my = new JSONObject();
 		my.put("type", "catalogue").put("msgid", "coralview");
-		// .put("content", new JSONObject().put("type", "text").put("text",
-		// message))
-		// .put("options", arrOptions).put("msgid", msgid);
 		ArrayList<JSONObject> itemObject = new ArrayList<JSONObject>();
 		for (CartItem order : orderList) {
 			ArrayList<JSONObject> options = new ArrayList<JSONObject>();
@@ -88,21 +73,27 @@ public class BotUtils {
 
 	public static JSONObject paymentOptions(String serverPath, OrderInformation orderInformation) {
 
-		// {
-		// "type": "survey",
-		// "question": "What would you like to do?",
-		// "options": ["Eat", "Drink", "{\"type\":\"url\",\"title\":\"View
-		// website\",\"url\":\"www.gupshup.io\"}"],
-		// "msgid": "3er45"
-		// }
 		Gson gson = new Gson();
 		JSONObject my = new JSONObject();
 		my.put("type", "survey").put("question", "How would you like to pay ?");
+
+		// Fetch all payment options from config
+
+		ConfigDao configDao = new ConfigDao();
+
 		ArrayList<JSONObject> options = new ArrayList<JSONObject>();
-		String url = serverPath + "/payment.jsp?&orderInformation=" + gson.toJson(orderInformation) + "&contextObject="
-				+ orderInformation.getGupshupObject().getContextObj();
-		options.add(new JSONObject().put("type", "url").put("title", "Pay Online").put("url", url).put("webview_height_ratio", "tall"));
-		options.add(new JSONObject().put("type", "text").put("title", "Cash"));
+
+		if (configDao.isConfigPresent("PAYMENTS", "ONLINE")) {
+			String url = serverPath + "/payment.jsp?&orderInformation=" + gson.toJson(orderInformation)
+					+ "&contextObject=" + orderInformation.getGupshupObject().getContextObj();
+
+			options.add(new JSONObject().put("type", "url").put("title", "Pay Online").put("url", url)
+					.put("webview_height_ratio", "tall"));
+		}
+		if (configDao.isConfigPresent("PAYMENTS", "CASH")) {
+			options.add(new JSONObject().put("type", "text").put("title", "Cash"));
+		}
+
 		my.put("options", options).put("msgid", "3er45");
 		return my;
 	}
@@ -154,26 +145,67 @@ public class BotUtils {
 
 	public static JSONObject tokenCoralView(List<Token> tokenList, String serverPath) {
 
-		OrderDao orderDao = new OrderDao();
 		JSONObject my = new JSONObject();
 		my.put("type", "catalogue").put("msgid", "coralview");
 		ArrayList<JSONObject> itemObject = new ArrayList<JSONObject>();
 		for (Token token : tokenList) {
-			ArrayList<JSONObject> options = new ArrayList<JSONObject>();
-			options.add(new JSONObject().put("type", "text").put("title", "Token " + token.getId() + ""));
 			JSONObject catItem = null;
 			if (token != null) {
-				catItem = new JSONObject().put("title", token.getId() + "")
-						.put("subtitle", "Order: " + token.getOrderId()).put("options", options);
+				catItem = new JSONObject().put("title", "Token Number" + token.getId() + "").put("subtitle",
+						"Order Id: " + token.getOrderId());
 			}
-			catItem.put("imgurl", serverPath + "/img/" + orderDao.getMenuItemId(token.getId()) + ".jpg");
 			itemObject.add(catItem);
-
 		}
 
 		my.put("items", itemObject);
+		return my;
+	}
+
+	public static JSONObject receiptTemplate(String serverPath, List<Token> tokenList, OrderInformation orderInfo) {
+
+		JSONObject idObj = new JSONObject();
+		JSONObject messageObj = new JSONObject();
+		JSONObject attachementObj = new JSONObject();
+		JSONObject payloadObj = new JSONObject();
+		JSONObject totalcostObj = new JSONObject();
+
+		JSONObject my = new JSONObject();
+
+		ArrayList<JSONObject> itemObject = new ArrayList<JSONObject>();
+		for (CartItem order : orderInfo.getOrderList()) {
+			ArrayList<JSONObject> options = new ArrayList<JSONObject>();
+			options.add(new JSONObject().put("title", order.getMenuItem().getName()).put("subtitle", "Token Number:")
+					.put("quantity", order.getQuantity()).put("price", order.getUnitPrice()).put("currency", "INR")
+					.put("image_url", serverPath + "/img/" + order.getMenuItem().getItemid() + ".jpg"));
+
+			JSONObject elementObj = new JSONObject();
+			elementObj.put("imgurl", serverPath + "/img/" + order.getMenuItem().getItemid() + ".jpg");
+			itemObject.add(elementObj);
+
+		}
+
+		totalcostObj.put("total_cost", orderInfo.getTotalamount());
+		payloadObj.put("template_type", "receipt").put("recipient_name", "userName")
+				.put("order_number", tokenList.get(0).getOrderId()).put("currency", "INR")
+				.put("payment_method", "Online/Cash").put("timestamp", new Date().getTime()).put("elements", itemObject)
+				.put("summary", totalcostObj);
+
+		attachementObj.put("type", "template").put("payload", payloadObj);
+		messageObj.put("attachment", attachementObj);
+		idObj.put("id", orderInfo.getGupshupObject().getSender());
+
+		my.put("recipient", idObj).put("message", messageObj);
 
 		return my;
+	}
+
+	public static void checkValidStatus(ArrayList<String> options) {
+		log.info("Option set with size " + options.size());
+		if (options.size() > 10) {
+			log.error("No Response will be sent because option list send has more than 10 values. Values are :"
+					+ options.size());
+
+		}
 	}
 
 }

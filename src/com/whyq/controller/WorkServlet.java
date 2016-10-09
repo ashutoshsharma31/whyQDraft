@@ -2,6 +2,7 @@ package com.whyq.controller;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -11,14 +12,17 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.log4j.Logger;
 import org.json.JSONObject;
 
+import com.google.gson.Gson;
 import com.whyq.conf.BaseOptions;
 import com.whyq.conf.Quantity;
 import com.whyq.conf.StatusMessages;
 import com.whyq.dao.CafeDao;
 import com.whyq.dao.OrderDataDao;
 import com.whyq.dao.SizeDao;
+import com.whyq.dao.TokenDao;
 import com.whyq.model.Cafe;
 import com.whyq.model.CartItem;
 import com.whyq.model.GupshupObject;
@@ -31,6 +35,7 @@ import com.whyq.session.Storage;
 import com.whyq.util.BotUtils;
 import com.whyq.util.CommonUtils;
 import com.whyq.util.ParseUtils;
+import com.whyq.util.TokenUtils;
 
 /**
  * Servlet implementation class WorkServlet
@@ -38,6 +43,8 @@ import com.whyq.util.ParseUtils;
 @WebServlet("/WorkServlet")
 public class WorkServlet extends HttpServlet {
 	private static final long serialVersionUID = 1L;
+	/* Get actual class name to be printed on */
+	static Logger log = Logger.getLogger(WorkServlet.class.getName());
 
 	/**
 	 * @see HttpServlet#HttpServlet()
@@ -53,6 +60,9 @@ public class WorkServlet extends HttpServlet {
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
+
+		log.debug("Request Recieved " + request);
+
 		// Write Object for response writing
 		PrintWriter writer = response.getWriter();
 		String serverPath = request.getRequestURL().substring(0,
@@ -78,46 +88,55 @@ public class WorkServlet extends HttpServlet {
 		}
 		menuItemsForCafe = sessionData.getMenuItemsForCafe();
 		String usermessage = go.getUserMessage();
-		System.out.println("---------USER MESSAGE ----- " + usermessage);
-		ArrayList<String> options = new ArrayList<String>();
+		log.debug("---------USER MESSAGE ----- " + usermessage);
+
 		// Parse Messages
 		// For the start of conversation
 		if (CommonUtils.getEvent(usermessage).equals("START")) {
-			System.out.println("************************ 0 ************************");
+			log.debug("************************ 0 ************************");
 			String message = "From Which cafe would you like to order? ";
 			CafeDao cafeDao = new CafeDao();
+			ArrayList<String> options = new ArrayList<String>();
 			options = cafeDao.getAllCafeList();
+			BotUtils.checkValidStatus(options);
 			String msgid = "CafeMessage";
 			sessionData.setCafeDefine(StatusMessages.CAFE_DEFINE_START);
+			log.debug("this is start of chat !");
 			writer.println(BotUtils.quickReplyTest(message, options, msgid));
 		} else if (CommonUtils.getEvent(usermessage).equals("MAIN")) {
-			System.out.println("************************ 0 ************************");
+			log.debug("************************ 0 ************************");
 			String message = "What would you like to do? ";
+			ArrayList<String> options = new ArrayList<String>();
 			options = BaseOptions.getMainMenuOptions();
+			BotUtils.checkValidStatus(options);
 			String msgid = "MainMenu";
 			sessionData.setCafeDefine(StatusMessages.CAFE_DEFINE_START);
 			writer.println(BotUtils.quickReplyTest(message, options, msgid));
 		}
 
 		else if (StatusMessages.CAFE_DEFINE_START.equals(sessionData.getCafeDefine())) {
-			System.out.println("************************ 1 ************************");
+			log.debug("************************ 1 ************************");
 			Cafe cafe = new Cafe();
 			CafeDao cafeDao = new CafeDao();
 			cafe = cafeDao.getCafeDetails(usermessage.trim());
 			if (cafe != null && cafe.getCafeid() != 0) {
-				System.out.println(" Setting Cafe ID as " + cafe.getCafeid() + " " + cafe.getName());
+				log.debug(" Setting Cafe ID as " + cafe.getCafeid() + " " + cafe.getName());
 				sessionData.setCafeid(cafe.getCafeid());
 				sessionData.setCafeDefine(StatusMessages.CAFE_DEFINED);
 				menuItemsForCafe.loadMenuItems(cafe.getCafeid());
 				String message = "What would you like to order ?";
+				ArrayList<String> options = new ArrayList<String>();
 				options = menuItemsForCafe.getStartOptions();
+				BotUtils.checkValidStatus(options);
 				String msgid = "StartMessage";
 				sessionData.setOrderStatus(StatusMessages.ORDER_START);
 				sessionData.setItemStatus(StatusMessages.ITEM_START);
 				writer.println(BotUtils.quickReplyTest(message, options, msgid));
 			} else {
 				String message = "Didn't understand your response! Please select the cafe ";
+				ArrayList<String> options = new ArrayList<String>();
 				options = cafeDao.getAllCafeList();
+				BotUtils.checkValidStatus(options);
 				String msgid = "CafeMessage";
 				sessionData.setCafeDefine(StatusMessages.CAFE_DEFINE_START);
 				writer.println(BotUtils.quickReplyTest(message, options, msgid));
@@ -129,13 +148,15 @@ public class WorkServlet extends HttpServlet {
 		else if (usermessage.trim().contains("Update")) {
 			String itemName = usermessage.substring(7, usermessage.length() - 2);
 			int index = Integer.parseInt(usermessage.substring(usermessage.length() - 1));
+			ArrayList<String> options = new ArrayList<String>();
 			options = Quantity.getQuantity();
+			BotUtils.checkValidStatus(options);
 			String message = "Please specify new quantity of " + itemName;
 			sessionData.setItemStatus(StatusMessages.ITEM_NEW_QUANTITY);
 			String msgid = "update";
 			CartItem item = sessionData.getOrderList().get(index - 1);
 			sessionData.setCartItem(item);
-			System.out.println(item + "  added as current item !");
+			log.debug(item + "  added as current item !");
 			writer.println(BotUtils.quickReplyTest(message, options, msgid));
 		}
 
@@ -146,7 +167,9 @@ public class WorkServlet extends HttpServlet {
 			sessionData.updatePrice();
 			String message = "Item updated .. What else ?";
 			String msgid = "ITEM_UPDATED";
+			ArrayList<String> options = new ArrayList<String>();
 			options = menuItemsForCafe.getReviewOrder();
+			BotUtils.checkValidStatus(options);
 			sessionData.initialzeAfterItemAddition();
 			sessionData.setItemStatus(StatusMessages.ITEM_COMPLETE);
 			sessionData.setOrderStatus(StatusMessages.ORDER_IN_PROGRESS);
@@ -159,7 +182,9 @@ public class WorkServlet extends HttpServlet {
 			sessionData.removeOrderFromListUsingIndex(index - 1);
 			String message = "Item deleted .. what else ?";
 			String msgid = "ITEM_DELETED";
+			ArrayList<String> options = new ArrayList<String>();
 			options = menuItemsForCafe.getReviewOrder();
+			BotUtils.checkValidStatus(options);
 			sessionData.initialzeAfterItemAddition();
 			sessionData.setItemStatus(StatusMessages.ITEM_COMPLETE);
 			sessionData.setOrderStatus(StatusMessages.ORDER_IN_PROGRESS);
@@ -171,12 +196,12 @@ public class WorkServlet extends HttpServlet {
 			List<CartItem> orderList = sessionData.getOrderList();
 			String message = "";
 			for (CartItem order : orderList) {
-				System.out.println(order);
+				log.debug(order);
 				message += order;
 			}
 			// String[] options = menuItemsForCafe.getMenuItems("Review Order");
 			JSONObject coralObject = BotUtils.coralView(orderList, serverPath);
-			System.out.println("Coral Object" + coralObject);
+			log.debug("Coral Object" + coralObject);
 			writer.println(coralObject);
 
 		}
@@ -191,9 +216,23 @@ public class WorkServlet extends HttpServlet {
 			orderDataDao.saveOrder(orderInformation);
 			orderDataDao.saveOrderLines(orderInformation);
 			sessionData.setOrderInformation(orderInformation);
-			System.out.println("paymentOption Object" + paymentOption);
+			log.debug("paymentOption Object" + paymentOption);
 			sessionData.clearOrderList();
 			writer.println(paymentOption);
+		}
+
+		else if (usermessage.toLowerCase().equals("cash")) {
+			OrderDataDao orderDataDao = new OrderDataDao();
+			TokenDao tokenDao = new TokenDao();
+			TokenUtils tokenUtils = new TokenUtils();
+			orderDataDao.updateOrderStatus(sessionData.getOrderInformation());
+			tokenDao.createTokens(sessionData.getOrderInformation());
+			tokenUtils.sendTokenCarolMessage(sessionData.getOrderInformation().getGupshupObject().getContextObj(),
+					serverPath, tokenDao.getAllTokensForOrder(sessionData.getOrderInformation().getOrderNum()));
+			tokenUtils.sendReceipt(sessionData.getOrderInformation().getGupshupObject().getContextObj(), serverPath,
+					tokenDao.getAllTokensForOrder(sessionData.getOrderInformation().getOrderNum()),
+					sessionData.getOrderInformation());
+
 		}
 
 		// For quantity of the product
@@ -202,12 +241,12 @@ public class WorkServlet extends HttpServlet {
 				|| StatusMessages.ITEM_MULTIPLE_SIZE.equals(sessionData.getItemStatus())
 				|| StatusMessages.ITEM_MULTIPLE_SIZE_COUNTER.equals(sessionData.getItemStatus()))
 				&& ParseUtils.isInteger(usermessage.trim())) {
-			System.out.println("************************ 2 ************************");
+			log.debug("************************ 2 ************************");
 			CartItem item = sessionData.getCartItem();
-			System.out.println(" CART ITEM TO PROCESS is " + item);
+			log.debug(" CART ITEM TO PROCESS is " + item);
 			if (menuItemsForCafe.isSizeable(item.getMenuItem())) {
 				// If the product is sizable
-				System.out.println("************************ 3 ************************");
+				log.debug("************************ 3 ************************");
 				SizeDao sizeDao = new SizeDao();
 				if (sessionData.getItemStatus().equals(StatusMessages.ITEM_QUANTITY)) {
 					sessionData.setRemQuantity(Integer.parseInt(usermessage.trim()));
@@ -220,30 +259,32 @@ public class WorkServlet extends HttpServlet {
 						&& !sessionData.getItemStatus().equals(StatusMessages.ITEM_MULTIPLE_SIZE_COUNTER)
 						&& !sessionData.getItemStatus().equals(StatusMessages.ITEM_MULTIPLE_SIZE)) {
 					// if quantity choose is 1
-					System.out.println("************************ 4 ************************");
+					log.debug("************************ 4 ************************");
 					String msgid = "SIZE_SELECT_ONE_QTY";
+					ArrayList<String> options = new ArrayList<String>();
 					String message = "What size do you want that? ";
 					options = sizeDao.getAllSizesForItem(item.getMenuItem());
+					BotUtils.checkValidStatus(options);
 					sessionData.setItemStatus(StatusMessages.ITEM_SINGLE_SIZE);
 					sessionData.setOrderStatus(StatusMessages.ORDER_IN_PROGRESS);
 					writer.println(BotUtils.quickReplyTest(message, options, msgid));
 				} else {
 					// Sizable Item quantity more than 1
-					System.out.println("************************ 5 ************************");
+					log.debug("************************ 5 ************************");
 					ArrayList<Size> sizeList = sessionData.getSizesList();
 					int sizeCounter = sessionData.getSizeCounter();
 
 					int remQty = sessionData.getRemQuantity();
 					if (sizeList.isEmpty()) {
 						// Fill the size list
-						System.out.println("************************ 6 ************************");
+						log.debug("************************ 6 ************************");
 						sizeList = sizeDao.getAllSizes(item.getMenuItem());
 						sessionData.setSizesList(sizeList);
 						remQty = Integer.parseInt(usermessage);
 					}
 					if (remQty == 0 || sizeCounter == sizeList.size() - 1) {
 						// for last item
-						System.out.println("************************ 7 ************************");
+						log.debug("************************ 7 ************************");
 						String message = "Item added ..  Whats else ?";
 						if (Integer.parseInt(usermessage) > 0) {
 							CartItem finalitem = new CartItem(item.getMenuItem(), Integer.parseInt(usermessage),
@@ -252,20 +293,24 @@ public class WorkServlet extends HttpServlet {
 						}
 						String msgid = "ITEM_COMPLETED";
 						sessionData.initialzeAfterItemAddition();
+						ArrayList<String> options = new ArrayList<String>();
 						options = menuItemsForCafe.getReviewOrder();
+						BotUtils.checkValidStatus(options);
 						sessionData.setItemStatus(StatusMessages.ITEM_COMPLETE);
 						sessionData.setOrderStatus(StatusMessages.ORDER_IN_PROGRESS);
 						writer.println(BotUtils.quickReplyTest(message, options, msgid));
 					} else {
 						// all the items except last
-						System.out.println(
+						log.debug(
 								"************************ 9 ************************ size counter" + sizeCounter + " ");
+						ArrayList<String> options = new ArrayList<String>();
 						options = Quantity.getQuantityFromZero(sessionData.getRemQuantity());
-						System.out.println(" STATUS " + sizeCounter + " " + sessionData.getItemStatus());
+						BotUtils.checkValidStatus(options);
+						log.debug(" STATUS " + sizeCounter + " " + sessionData.getItemStatus());
 						if (sizeCounter == 0
 								&& !sessionData.getItemStatus().equals(StatusMessages.ITEM_MULTIPLE_SIZE_COUNTER)) {
 							// FIRST COUNTER .. No need to add the item
-							System.out.println("************************ 123 ************************");
+							log.debug("************************ 123 ************************");
 							Size size = sizeList.get(sizeCounter);
 							item.setSize(size);
 							// item.setQuantity(Integer.parseInt(usermessage));
@@ -275,8 +320,8 @@ public class WorkServlet extends HttpServlet {
 							sessionData.setItemStatus(StatusMessages.ITEM_MULTIPLE_SIZE_COUNTER);
 							writer.println(BotUtils.quickReplyTest(message, options, msgid));
 						} else {
-							System.out.println("************************ 1000 ************************");
-							System.out.println(item.getMenuItem() + " " + Integer.parseInt(usermessage) + " "
+							log.debug("************************ 1000 ************************");
+							log.debug(item.getMenuItem() + " " + Integer.parseInt(usermessage) + " "
 									+ sizeList.get(sizeCounter).getDesc());
 							if (Integer.parseInt(usermessage) > 0) {
 								CartItem finalitem = new CartItem(item.getMenuItem(), Integer.parseInt(usermessage),
@@ -295,12 +340,14 @@ public class WorkServlet extends HttpServlet {
 				}
 			} else {
 				// Product is not sizeable
-				System.out.println("************************ 13 ************************");
+				log.debug("************************ 13 ************************");
 				item.setQuantity(Integer.parseInt(usermessage.trim()));
 				String message = "Item added " + item.getMenuItem().getName() + " with quantity " + item.getQuantity()
 						+ "! What else ?";
 				String msgid = "itemaddednosize";
+				ArrayList<String> options = new ArrayList<String>();
 				options = menuItemsForCafe.getReviewOrder();
+				BotUtils.checkValidStatus(options);
 				sessionData.addItemToCart(item);
 				sessionData.setItemStatus(StatusMessages.ITEM_COMPLETE);
 				sessionData.setOrderStatus(StatusMessages.ORDER_IN_PROGRESS);
@@ -310,52 +357,58 @@ public class WorkServlet extends HttpServlet {
 		}
 
 		else if (StatusMessages.ITEM_SINGLE_SIZE.equals(sessionData.getItemStatus())) {
-			System.out.println("************************ 14 ************************");
+			log.debug("************************ 14 ************************");
 			// Item added to cartList with size .. this is only for 1 item
 			CartItem item = sessionData.getCartItem();
 			SizeDao sizeDao = new SizeDao();
 			ArrayList<String> sizeList = sizeDao.getAllSizesForItem(item.getMenuItem());
 			ArrayList<Size> listOfSizes = sizeDao.getAllSizes(item.getMenuItem());
-			System.out.println(sizeList);
+			log.debug(sizeList);
 			if (sizeList.contains(usermessage)) {
-				System.out.println("************************ 15 ************************");
-				System.out.println("Size Found ");
+				log.debug("************************ 15 ************************");
+				log.debug("Size Found ");
 				item.setSize(CommonUtils.getSizeByName(listOfSizes, usermessage));
 				item.setQuantity(1);
 				sessionData.addItemToCart(item);
 				String message = "Item added ..  Whats else ?";
 				String msgid = "ITEM_COMPLETED";
+				ArrayList<String> options = new ArrayList<String>();
 				options = menuItemsForCafe.getReviewOrder();
+				BotUtils.checkValidStatus(options);
 				sessionData.setItemStatus(StatusMessages.ITEM_COMPLETE);
 				sessionData.setOrderStatus(StatusMessages.ORDER_IN_PROGRESS);
 				writer.println(BotUtils.quickReplyTest(message, options, msgid));
 			} else {
-				System.out.println("************************ 16 ************************");
-				System.out.println("SIZE NOT IDENTIFIED ... HANDLE IT");
+				log.debug("************************ 16 ************************");
+				log.debug("SIZE NOT IDENTIFIED ... HANDLE IT");
 			}
 		}
 
 		// If the message received is a product or menu item
 		else if (menuItemsForCafe.hasItem(usermessage)) {
-			System.out.println("************************ 17 ************************");
+			log.debug("************************ 17 ************************");
 			MenuItem menuItem = new MenuItem();
 			menuItem = menuItemsForCafe.getMenuItems(usermessage);
 			sessionData.setItemStatus(StatusMessages.ITEM_IN_PROGRESS);
 			sessionData.setOrderStatus(StatusMessages.ORDER_IN_PROGRESS);
 			String msgid = "SetQuantity";
 			if (menuItemsForCafe.checkMenuItemToOrder(menuItem)) {
-				System.out.println("************************ 18 ************************");
+				log.debug("************************ 18 ************************");
+				ArrayList<String> options = new ArrayList<String>();
 				options = Quantity.getQuantity();
+				BotUtils.checkValidStatus(options);
 				String message = "Please specify quantity of " + usermessage;
 				sessionData.setItemStatus(StatusMessages.ITEM_QUANTITY);
 				sessionData.setCartItem(new CartItem(menuItem));
 				writer.println(BotUtils.quickReplyTest(message, options, msgid));
 
 			} else {
-				System.out.println("************************ 19 ************************");
+				log.debug("************************ 19 ************************");
 				// This is a parent menu
 				// Will send the child product as response
+				ArrayList<String> options = new ArrayList<String>();
 				options = menuItemsForCafe.getNextOptions(menuItem);
+				BotUtils.checkValidStatus(options);
 				String message = "Which " + usermessage + " you like to order ?";
 				msgid = "ParentProduct";
 				writer.println(BotUtils.quickReplyTest(message, options, msgid));
@@ -364,16 +417,18 @@ public class WorkServlet extends HttpServlet {
 		} else {
 			String message = "Sorry I didn't get you ! Please confirm Which cafe would you like to order? ";
 			CafeDao cafeDao = new CafeDao();
+			ArrayList<String> options = new ArrayList<String>();
 			options = cafeDao.getAllCafeList();
+			BotUtils.checkValidStatus(options);
 			String msgid = "CafeMessage";
 			sessionData.setCafeDefine(StatusMessages.CAFE_DEFINE_START);
 			writer.println(BotUtils.quickReplyTest(message, options, msgid));
 		}
 
-		// System.out.println(sessionData);
+		// log.debug(sessionData);
 
-		System.out.println(sessionData.getSizesList());
-		System.out.println(sessionData.getOrderList());
+		log.debug(sessionData.getSizesList());
+		log.debug(sessionData.getOrderList());
 
 		writer.flush();
 		writer.close();
