@@ -100,8 +100,8 @@ public class OrderDao {
 		int max = 0;
 		try {
 
-			String query = "select orderlineid from orderline L, orderinfo I " + " where " + " L.orderid = I.orderid"
-					+ " and I.orderid = '" + orderid + "'" + " and L.itemid = " + itemid;
+			String query = "select orderlineid from orderline L, orderdata I " + " where " + " L.orderid = I.ordernum"
+					+ " and I.ordernum = '" + orderid + "'" + " and L.itemid = " + itemid;
 			if ("Y".equals(size)) {
 				query += " and size = '" + size + "'";
 			}

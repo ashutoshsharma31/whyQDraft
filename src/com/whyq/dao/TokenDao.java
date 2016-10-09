@@ -131,8 +131,7 @@ public class TokenDao {
 			int maxToken = tokenDao.getMaxTokenNum() + 1;
 			Token token = new Token();
 			token.setOrderId(orderInformation.getOrderNum());
-			token.setOrderLineId(orderDao.getOrderLineId(orderInformation.getOrderNum(),
-					cartItem.getMenuItem().getItemid(), cartItem.getMenuItem().getSizeable()));
+			token.setOrderLineId(orderDao.getOrderLineId(orderInformation.getOrderNum(),cartItem.getMenuItem().getItemid(), cartItem.getMenuItem().getSizeable()));
 			token.setStatus("PENDING");
 			tokenDao.saveToken(token);
 			log.info("TOKEN " + token.toString());

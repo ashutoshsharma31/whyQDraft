@@ -14,10 +14,12 @@ import javax.servlet.http.HttpServletResponse;
 import com.google.gson.Gson;
 import com.whyq.dao.OrderDao;
 import com.whyq.dao.OrderDataDao;
+import com.whyq.dao.ReceiptDao;
 import com.whyq.dao.TokenDao;
 import com.whyq.model.CartItem;
 import com.whyq.model.GupshupObject;
 import com.whyq.model.OrderInformation;
+import com.whyq.model.Receipt;
 import com.whyq.model.Token;
 import com.whyq.util.BotUtils;
 import com.whyq.util.TokenUtils;
@@ -53,7 +55,12 @@ public class Purchase extends HttpServlet {
 			String serverPath = request.getRequestURL().substring(0,
 					request.getRequestURL().length() - request.getServletPath().length());
 			tokenUtils.sendTokenCarolMessage(strContext, serverPath, tokenDao.getAllTokensForOrder(orderInformation.getOrderNum()));
-			tokenUtils.sendReceipt(strContext,serverPath,tokenDao.getAllTokensForOrder(orderInformation.getOrderNum()),orderInformation);
+			
+			
+			Receipt receipt = new Receipt();
+			ReceiptDao receiptDao = new ReceiptDao();
+			receipt = receiptDao.getReceipt(orderInformation.getOrderNum());			
+			tokenUtils.sendReceipt(strContext, serverPath, receipt);
 			PrintWriter out = response.getWriter();
 			out.println("Payment Successful !");
 		} catch (Exception e) {

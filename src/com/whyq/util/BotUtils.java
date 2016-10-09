@@ -23,6 +23,8 @@ import com.whyq.model.CartItem;
 import com.whyq.model.Config;
 import com.whyq.model.GupshupObject;
 import com.whyq.model.OrderInformation;
+import com.whyq.model.Receipt;
+import com.whyq.model.ReceiptElement;
 import com.whyq.model.Token;
 import com.whyq.session.SessionData;
 
@@ -161,7 +163,7 @@ public class BotUtils {
 		return my;
 	}
 
-	public static JSONObject receiptTemplate(String serverPath, List<Token> tokenList, OrderInformation orderInfo) {
+	public static JSONObject receiptTemplate(String serverPath, Receipt receipt) {
 
 		JSONObject idObj = new JSONObject();
 		JSONObject messageObj = new JSONObject();
@@ -172,30 +174,26 @@ public class BotUtils {
 		JSONObject my = new JSONObject();
 
 		ArrayList<JSONObject> itemObject = new ArrayList<JSONObject>();
-		for (CartItem order : orderInfo.getOrderList()) {
-			//ArrayList<JSONObject> options = new ArrayList<JSONObject>();
-			//options.add(new JSONObject().put("title", order.getMenuItem().getName()).put("subtitle", "Token Number:")
-			//		.put("quantity", order.getQuantity()).put("price", order.getUnitPrice()).put("currency", "INR")
-			//		.put("image_url", serverPath + "/img/" + order.getMenuItem().getItemid() + ".jpg"));
-
+		for (ReceiptElement receiptElement : receipt.getReceiptElementList()) {
 			JSONObject elementObj = new JSONObject();
-			elementObj.put("title", order.getMenuItem().getName()).put("subtitle", "Token Number:")
-			.put("quantity", order.getQuantity()).put("price", order.getUnitPrice()).put("currency", "INR")
-			.put("image_url", serverPath + "/img/" + order.getMenuItem().getItemid() + ".jpg");
-			//elementObj.put("imgurl", serverPath + "/img/" + order.getMenuItem().getItemid() + ".jpg");
+			elementObj.put("title", receiptElement.getTitle())
+					.put("subtitle", "Token Number: " + receiptElement.getSubtitle())
+					.put("quantity", receiptElement.getQuantity()).put("price", receiptElement.getPrice())
+					.put("currency", receiptElement.getCurrency())
+					.put("image_url", serverPath + "/img/" + receiptElement.getItemid() + ".jpg");
 			itemObject.add(elementObj);
 
 		}
 
-		totalcostObj.put("total_cost", orderInfo.getTotalamount());
-		payloadObj.put("template_type", "receipt").put("recipient_name", "userName")
-				.put("order_number", orderInfo.getOrderNum()).put("currency", "INR")
-				.put("payment_method", "Online/Cash").put("timestamp", new Date().toString()).put("elements", itemObject)
-				.put("summary", totalcostObj);
+		totalcostObj.put("total_cost", receipt.getTotal_cost());
+		payloadObj.put("template_type", "receipt").put("recipient_name", receipt.getRecipientName())
+				.put("order_number", receipt.getOrderNumber()).put("currency", receipt.getCurrency())
+				.put("payment_method", "Online/Cash").put("timestamp", receipt.getTimestamp())
+				.put("elements", itemObject).put("summary", totalcostObj);
 
 		attachementObj.put("type", "template").put("payload", payloadObj);
 		messageObj.put("attachment", attachementObj);
-		idObj.put("id", orderInfo.getGupshupObject().getSender());
+		idObj.put("id", receipt.getRecipientName());
 
 		my.put("recipient", idObj).put("message", messageObj);
 

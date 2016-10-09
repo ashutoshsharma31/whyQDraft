@@ -21,6 +21,7 @@ import com.whyq.conf.Quantity;
 import com.whyq.conf.StatusMessages;
 import com.whyq.dao.CafeDao;
 import com.whyq.dao.OrderDataDao;
+import com.whyq.dao.ReceiptDao;
 import com.whyq.dao.SizeDao;
 import com.whyq.dao.TokenDao;
 import com.whyq.model.Cafe;
@@ -29,6 +30,7 @@ import com.whyq.model.GupshupObject;
 import com.whyq.model.MenuItem;
 import com.whyq.model.MenuItemsForCafe;
 import com.whyq.model.OrderInformation;
+import com.whyq.model.Receipt;
 import com.whyq.model.Size;
 import com.whyq.session.SessionData;
 import com.whyq.session.Storage;
@@ -232,9 +234,10 @@ public class WorkServlet extends HttpServlet {
 			tokenUtils.sendTokenCarolMessage(sessionData.getOrderInformation().getGupshupObject().getContextObj(),
 					serverPath, tokenDao.getAllTokensForOrder(sessionData.getOrderInformation().getOrderNum()));
 			log.debug(" Sending token is completed to facebook. ");
-			tokenUtils.sendReceipt(sessionData.getOrderInformation().getGupshupObject().getContextObj(), serverPath,
-					tokenDao.getAllTokensForOrder(sessionData.getOrderInformation().getOrderNum()),
-					sessionData.getOrderInformation());
+			Receipt receipt = new Receipt();
+			ReceiptDao receiptDao = new ReceiptDao();
+			receipt = receiptDao.getReceipt(sessionData.getOrderInformation().getOrderNum());			
+			tokenUtils.sendReceipt(sessionData.getOrderInformation().getGupshupObject().getContextObj(), serverPath, receipt);
 			log.debug(" Sending receipt is completed to facebook. ");
 			sessionData.clearOrderList();
 		}

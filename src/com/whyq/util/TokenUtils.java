@@ -5,6 +5,7 @@ import java.util.List;
 import org.apache.log4j.Logger;
 
 import com.whyq.model.OrderInformation;
+import com.whyq.model.Receipt;
 import com.whyq.model.Token;
 
 import okhttp3.MediaType;
@@ -56,13 +57,12 @@ public class TokenUtils {
 		log.info("End sendTokenCarolMessage " + contextObject);
 	}
 
-	public void sendReceipt(String contextObject, String serverPath, List<Token> tokenList,
-			OrderInformation orderInfo) {
-		log.info("in sendReceipt " + contextObject + " Order Num " + orderInfo.getOrderNum());
+	public void sendReceipt(String contextObject, String serverPath, Receipt receipt) {
+		log.info("in sendReceipt " + contextObject + " Order Num " + receipt.getOrderNumber());
 
 		String URL = "https://api.gupshup.io/sm/api/bot/WhyQDraft/msg";
-		String body = "context=" + contextObject + "&message="
-				+ BotUtils.receiptTemplate(serverPath, tokenList, orderInfo) + "&bypass=true";
+		String body = "context=" + contextObject + "&message=" + BotUtils.receiptTemplate(serverPath, receipt)
+				+ "&bypass=true";
 
 		System.out.println(body);
 		try {
@@ -76,7 +76,7 @@ public class TokenUtils {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		log.info("End sendReceipt " + contextObject + " Order Num " + orderInfo.getOrderNum());
+		log.info("End sendReceipt " + contextObject + " Order Num " + receipt.getOrderNumber());
 	}
 
 }
