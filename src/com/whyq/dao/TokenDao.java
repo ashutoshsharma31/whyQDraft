@@ -8,12 +8,17 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.log4j.Logger;
+
+import com.whyq.controller.WorkServlet;
 import com.whyq.model.CartItem;
 import com.whyq.model.OrderInformation;
 import com.whyq.model.Token;
 import com.whyq.util.DbUtil;
 
 public class TokenDao {
+	static Logger log = Logger.getLogger(TokenDao.class.getName());
+
 	private Connection connection;
 
 	public TokenDao() {
@@ -21,31 +26,35 @@ public class TokenDao {
 	}
 
 	public void saveToken(Token token) {
-
+		log.info("Method saveToken Start "+token);
+		int records = 0;
 		try {
 			String query = "insert into token(orderid,orderlineid, status) values (?,?,?)";
 			PreparedStatement preparedStatement = connection.prepareStatement(query);
 			preparedStatement.setString(1, token.getOrderId());
 			preparedStatement.setInt(2, token.getOrderLineId());
 			preparedStatement.setString(3, token.getStatus());
-			preparedStatement.executeUpdate();
+			records = preparedStatement.executeUpdate();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
-
+		log.info("Method saveToken End "+records +" inserted in token");
 	}
 
 	public void updateToken(Token token) {
+		log.info("Method updateToken Start "+token);
+		int records = 0;
 		try {
 			String query = "update token set orderid= ? , status = ? where tokenid = ?";
 			PreparedStatement preparedStatement = connection.prepareStatement(query);
 			preparedStatement.setString(1, token.getOrderId());
 			preparedStatement.setString(2, token.getStatus());
 			preparedStatement.setInt(3, token.getId());
-			preparedStatement.executeUpdate();
+			records  = preparedStatement.executeUpdate();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
+		log.info("Method updateToken End "+records +" updated in token");
 	}
 
 	public int getMaxTokenNum() {
@@ -62,6 +71,7 @@ public class TokenDao {
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
+		log.info("Method getMaxTokenNum Max Token Number returned is "+max);
 		return max;
 	}
 	
@@ -90,7 +100,7 @@ public class TokenDao {
 	}
 	
 	public List<Token> getRecieptNTokenDataForOrder(String orderId) {
-
+		log.info("Method getRecieptNTokenDataForOrder Start "+orderId);
 		List<Token> tokenList = new ArrayList<Token>();
 		try {
 			
@@ -112,7 +122,8 @@ public class TokenDao {
 		return tokenList;
 	}
 	
-	public static void createTokens(OrderInformation orderInformation) {
+	public void createTokens(OrderInformation orderInformation) {
+		log.info("Method createTokens Start "+orderInformation);
 		OrderDao orderDao = new OrderDao();
 		List<CartItem> cartList = orderInformation.getOrderList();
 		for (CartItem cartItem : cartList) {
@@ -124,9 +135,9 @@ public class TokenDao {
 					cartItem.getMenuItem().getItemid(), cartItem.getMenuItem().getSizeable()));
 			token.setStatus("PENDING");
 			tokenDao.saveToken(token);
-			
-			System.out.println("TOKEN " + token.toString());
+			log.info("TOKEN " + token.toString());
 		}
+		log.info("Method createTokens END ");
 	}
 	
 

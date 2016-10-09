@@ -151,7 +151,7 @@ public class BotUtils {
 		for (Token token : tokenList) {
 			JSONObject catItem = null;
 			if (token != null) {
-				catItem = new JSONObject().put("title", "Token Number" + token.getId() + "").put("subtitle",
+				catItem = new JSONObject().put("title", "Token Number " + token.getId() + "").put("subtitle",
 						"Order Id: " + token.getOrderId());
 			}
 			itemObject.add(catItem);
@@ -173,21 +173,24 @@ public class BotUtils {
 
 		ArrayList<JSONObject> itemObject = new ArrayList<JSONObject>();
 		for (CartItem order : orderInfo.getOrderList()) {
-			ArrayList<JSONObject> options = new ArrayList<JSONObject>();
-			options.add(new JSONObject().put("title", order.getMenuItem().getName()).put("subtitle", "Token Number:")
-					.put("quantity", order.getQuantity()).put("price", order.getUnitPrice()).put("currency", "INR")
-					.put("image_url", serverPath + "/img/" + order.getMenuItem().getItemid() + ".jpg"));
+			//ArrayList<JSONObject> options = new ArrayList<JSONObject>();
+			//options.add(new JSONObject().put("title", order.getMenuItem().getName()).put("subtitle", "Token Number:")
+			//		.put("quantity", order.getQuantity()).put("price", order.getUnitPrice()).put("currency", "INR")
+			//		.put("image_url", serverPath + "/img/" + order.getMenuItem().getItemid() + ".jpg"));
 
 			JSONObject elementObj = new JSONObject();
-			elementObj.put("imgurl", serverPath + "/img/" + order.getMenuItem().getItemid() + ".jpg");
+			elementObj.put("title", order.getMenuItem().getName()).put("subtitle", "Token Number:")
+			.put("quantity", order.getQuantity()).put("price", order.getUnitPrice()).put("currency", "INR")
+			.put("image_url", serverPath + "/img/" + order.getMenuItem().getItemid() + ".jpg");
+			//elementObj.put("imgurl", serverPath + "/img/" + order.getMenuItem().getItemid() + ".jpg");
 			itemObject.add(elementObj);
 
 		}
 
 		totalcostObj.put("total_cost", orderInfo.getTotalamount());
 		payloadObj.put("template_type", "receipt").put("recipient_name", "userName")
-				.put("order_number", tokenList.get(0).getOrderId()).put("currency", "INR")
-				.put("payment_method", "Online/Cash").put("timestamp", new Date().getTime()).put("elements", itemObject)
+				.put("order_number", orderInfo.getOrderNum()).put("currency", "INR")
+				.put("payment_method", "Online/Cash").put("timestamp", new Date().toString()).put("elements", itemObject)
 				.put("summary", totalcostObj);
 
 		attachementObj.put("type", "template").put("payload", payloadObj);

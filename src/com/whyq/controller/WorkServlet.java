@@ -217,7 +217,7 @@ public class WorkServlet extends HttpServlet {
 			orderDataDao.saveOrderLines(orderInformation);
 			sessionData.setOrderInformation(orderInformation);
 			log.debug("paymentOption Object" + paymentOption);
-			sessionData.clearOrderList();
+			//sessionData.clearOrderList();
 			writer.println(paymentOption);
 		}
 
@@ -226,13 +226,17 @@ public class WorkServlet extends HttpServlet {
 			TokenDao tokenDao = new TokenDao();
 			TokenUtils tokenUtils = new TokenUtils();
 			orderDataDao.updateOrderStatus(sessionData.getOrderInformation());
+			log.debug(" Update of Order status is complete ");
 			tokenDao.createTokens(sessionData.getOrderInformation());
+			log.debug(" Token Creation complete.");
 			tokenUtils.sendTokenCarolMessage(sessionData.getOrderInformation().getGupshupObject().getContextObj(),
 					serverPath, tokenDao.getAllTokensForOrder(sessionData.getOrderInformation().getOrderNum()));
+			log.debug(" Sending token is completed to facebook. ");
 			tokenUtils.sendReceipt(sessionData.getOrderInformation().getGupshupObject().getContextObj(), serverPath,
 					tokenDao.getAllTokensForOrder(sessionData.getOrderInformation().getOrderNum()),
 					sessionData.getOrderInformation());
-
+			log.debug(" Sending receipt is completed to facebook. ");
+			sessionData.clearOrderList();
 		}
 
 		// For quantity of the product

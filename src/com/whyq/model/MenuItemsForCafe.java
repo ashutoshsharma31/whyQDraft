@@ -9,16 +9,20 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
+import org.apache.log4j.Logger;
+
 import com.whyq.model.MenuItem;
 import com.whyq.util.DbUtil;
+import com.whyq.util.TokenUtils;
 
 public class MenuItemsForCafe {
 	private HashMap<String, MenuItem> menuMap = new HashMap<String, MenuItem>();
 	private List<MenuItem> menuItems = new ArrayList<MenuItem>();
 	private Connection connection;
+	static Logger log = Logger.getLogger(MenuItemsForCafe.class.getName());
 
 	public MenuItemsForCafe() {
-		
+
 	}
 
 	public boolean hasItem(String key) {
@@ -28,8 +32,6 @@ public class MenuItemsForCafe {
 			return false;
 		}
 	}
-	
-	
 
 	public MenuItem getMenuItems(String key) {
 
@@ -62,6 +64,7 @@ public class MenuItemsForCafe {
 		}
 		return startArr;
 	}
+
 	public ArrayList<String> getNextOptions(MenuItem menuItem) {
 		ArrayList<String> nextArr = new ArrayList<String>();
 		for (MenuItem menuObj : menuItems) {
@@ -79,13 +82,17 @@ public class MenuItemsForCafe {
 		confirm.addAll(getStartOptions());
 		return confirm;
 	}
-	
-	
-	public void loadMenuItems(int cafeid){
+
+	public void loadMenuItems(int cafeid) {
+
 		try {
+			log.info("Clearing the map first. ");
+			menuMap.clear();
+			menuItems.clear();
+
 			connection = DbUtil.getConnection();
 			Statement statement = connection.createStatement();
-			ResultSet rs = statement.executeQuery("select * from menuitem where cafeid='"+cafeid+"'");
+			ResultSet rs = statement.executeQuery("select * from menuitem where cafeid='" + cafeid + "'");
 			while (rs.next()) {
 				MenuItem menuItem = new MenuItem();
 				menuItem.setItemid(rs.getInt("itemid"));
@@ -97,22 +104,21 @@ public class MenuItemsForCafe {
 				menuMap.put(menuItem.getName(), menuItem);
 				menuItems.add(menuItem);
 			}
+			log.info("Inserting into the map. ");
 		} catch (SQLException e) {
 			System.out.println("--------------- ERROR IN LOADING MENU ITEM .. 1 -----");
 			e.printStackTrace();
-		}
-		catch (Exception e){
+		} catch (Exception e) {
 			System.out.println("--------------- ERROR IN LOADING MENU ITEM .. 2 -----");
 			e.printStackTrace();
 		}
-		System.out.println("MenuMap  "+ menuMap);
-		System.out.println("MenuItems  "+ menuItems);
+		System.out.println("MenuMap  " + menuMap);
+		System.out.println("MenuItems  " + menuItems);
 	}
-	
-	public void addMenuItemToCafe(MenuItem menuItem){
+
+	public void addMenuItemToCafe(MenuItem menuItem) {
 		menuMap.put(menuItem.getName(), menuItem);
 		menuItems.add(menuItem);
 	}
-	
-	
+
 }
