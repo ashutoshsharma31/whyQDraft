@@ -231,9 +231,9 @@ public class WorkServlet extends HttpServlet {
 			log.debug(" Update of Order status is complete ");
 			tokenDao.createTokens(sessionData.getOrderInformation());
 			log.debug(" Token Creation complete.");
-			tokenUtils.sendTokenCarolMessage(sessionData.getOrderInformation().getGupshupObject().getContextObj(),
-					serverPath, tokenDao.getAllTokensForOrder(sessionData.getOrderInformation().getOrderNum()));
-			log.debug(" Sending token is completed to facebook. ");
+			//tokenUtils.sendTokenCarolMessage(sessionData.getOrderInformation().getGupshupObject().getContextObj(),
+			//		serverPath, tokenDao.getAllTokensForOrder(sessionData.getOrderInformation().getOrderNum()));
+			//log.debug(" Sending token is completed to facebook. ");
 			Receipt receipt = new Receipt();
 			ReceiptDao receiptDao = new ReceiptDao();
 			receipt = receiptDao.getReceipt(sessionData.getOrderInformation().getOrderNum());			

@@ -61,7 +61,7 @@
 							if (order.getSize() == null) {
 						%>&nbsp;<%
 							} else {
-						%><%=order.getSize()%> <%
+						%><%=order.getSize().getDesc()%> <%
  	}
  %>
 					</td>

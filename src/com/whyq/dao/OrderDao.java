@@ -96,14 +96,14 @@ public class OrderDao {
 		}
 	}
 
-	public int getOrderLineId(String orderid, int itemid, String size) {
+	public int getOrderLineId(String orderid,CartItem cartItem) {
 		int max = 0;
 		try {
 
 			String query = "select orderlineid from orderline L, orderdata I " + " where " + " L.orderid = I.ordernum"
-					+ " and I.ordernum = '" + orderid + "'" + " and L.itemid = " + itemid;
-			if ("Y".equals(size)) {
-				query += " and size = '" + size + "'";
+					+ " and I.ordernum = '" + orderid + "'" + " and L.itemid = " + cartItem.getMenuItem().getItemid();
+			if ("Y".equals(cartItem.getMenuItem().getSizeable())) {
+				query += " and size = " + cartItem.getSize().getSizeid();
 			}
 			System.out.println(query);
 			Statement stmt = connection.createStatement();
