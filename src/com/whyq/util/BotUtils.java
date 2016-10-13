@@ -55,7 +55,7 @@ public class BotUtils {
 			JSONObject catItem = null;
 			if (order.getSize() != null) {
 				catItem = new JSONObject()
-						.put("title", order.getMenuItem().getName()).put("subtitle", "Size: " + order.getSize()
+						.put("title", order.getMenuItem().getName()).put("subtitle", "Size: " + order.getSize().getDesc()
 								+ " Quantity:" + order.getQuantity() + " Price:" + order.getTotalPrice())
 						.put("options", options);
 			} else {

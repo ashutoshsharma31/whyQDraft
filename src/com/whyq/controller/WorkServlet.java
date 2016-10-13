@@ -171,10 +171,13 @@ public class WorkServlet extends HttpServlet {
 			ArrayList<String> options = new ArrayList<String>();
 			options = Quantity.getQuantity();
 			BotUtils.checkValidStatus(options);
+			CartItem item = sessionData.getOrderList().get(index - 1);
 			String message = "Please specify new quantity of " + itemName;
+			if(item.getSize()!=null){
+				message = message.concat(" "+item.getSize().getDesc());
+			}
 			sessionData.setItemStatus(StatusMessages.ITEM_NEW_QUANTITY);
 			String msgid = "update";
-			CartItem item = sessionData.getOrderList().get(index - 1);
 			sessionData.setCartItem(item);
 			log.debug(item + "  added as current item !");
 			writer.println(BotUtils.quickReplyTest(message, options, msgid));
@@ -200,10 +203,18 @@ public class WorkServlet extends HttpServlet {
 			String itemName = usermessage.substring(7);
 			int index = Integer.parseInt(usermessage.substring(usermessage.length() - 1));
 			sessionData.removeOrderFromListUsingIndex(index - 1);
-			String message = "Item deleted .. what else ?";
+			String message = "Item deleted ..";
 			String msgid = "ITEM_DELETED";
 			ArrayList<String> options = new ArrayList<String>();
-			options = menuItemsForCafe.getReviewOrder();
+			if(sessionData.getOrderList().size()==0){
+				message = message.concat(" Nothing in cart now... what would you like to order");
+				options = menuItemsForCafe.getStartOptions();
+			}
+			else{				
+				options = menuItemsForCafe.getReviewOrder();
+			}
+			
+			
 			BotUtils.checkValidStatus(options);
 			sessionData.initialzeAfterItemAddition();
 			sessionData.setItemStatus(StatusMessages.ITEM_COMPLETE);
