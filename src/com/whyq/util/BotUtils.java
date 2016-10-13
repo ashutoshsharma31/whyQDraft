@@ -193,7 +193,7 @@ public class BotUtils {
 
 		attachementObj.put("type", "template").put("payload", payloadObj);
 		messageObj.put("attachment", attachementObj);
-		idObj.put("id", receipt.getRecipientName());
+		idObj.put("id", receipt.getUserid());
 
 		my.put("recipient", idObj).put("message", messageObj);
 

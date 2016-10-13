@@ -12,6 +12,7 @@ public class Receipt {
 	private String paymentMethod;
 	private String orderUrl;
 	private String timestamp;
+	private String userid;
 	
 	private ArrayList<ReceiptElement> receiptElementList;
 
@@ -97,12 +98,20 @@ public class Receipt {
 		this.cafename = cafename;
 	}
 
+	public String getUserid() {
+		return userid;
+	}
+
+	public void setUserid(String userid) {
+		this.userid = userid;
+	}
+
 	@Override
 	public String toString() {
 		return "Receipt [cafeid=" + cafeid + ", cafename=" + cafename + ", recipientName=" + recipientName
 				+ ", orderNumber=" + orderNumber + ", currency=" + currency + ", paymentMethod=" + paymentMethod
-				+ ", orderUrl=" + orderUrl + ", timestamp=" + timestamp + ", receiptElementList=" + receiptElementList
-				+ ", total_cost=" + total_cost + "]";
+				+ ", orderUrl=" + orderUrl + ", timestamp=" + timestamp + ", userid=" + userid + ", receiptElementList="
+				+ receiptElementList + ", total_cost=" + total_cost + "]";
 	}
 
 }

@@ -24,6 +24,7 @@ import com.whyq.dao.OrderDataDao;
 import com.whyq.dao.ReceiptDao;
 import com.whyq.dao.SizeDao;
 import com.whyq.dao.TokenDao;
+import com.whyq.dao.UserDao;
 import com.whyq.model.Cafe;
 import com.whyq.model.CartItem;
 import com.whyq.model.GupshupObject;
@@ -32,6 +33,7 @@ import com.whyq.model.MenuItemsForCafe;
 import com.whyq.model.OrderInformation;
 import com.whyq.model.Receipt;
 import com.whyq.model.Size;
+import com.whyq.model.User;
 import com.whyq.session.SessionData;
 import com.whyq.session.Storage;
 import com.whyq.util.BotUtils;
@@ -75,18 +77,34 @@ public class WorkServlet extends HttpServlet {
 
 		SessionData sessionData = Storage.getObject(go.getChannelId());
 		MenuItemsForCafe menuItemsForCafe = new MenuItemsForCafe();
+		
+		// Check user information
+		UserDao userDao = new UserDao();
+		User user = new User();
+		user.setChannel(go.getChannelId());
+		user.setContextObj(go.getContextObj());
+		user.setSender(go.getSender());
+		user.setSenderObj(go.getSenderObj());
+		user.setUsername(go.getUserName());
+		log.info(" User Object "+user);
+		log.info(" is User present "+userDao.isUserPresent(user.getSender()));
+		if (userDao.isUserPresent(user.getSender())) {
+			userDao.updateLastMessageDtTm(user);
+		} else {
+			userDao.saveUser(user);
+		}
+		
+
 		// Set Session Object or Update
 		if (sessionData != null) {
 			orderStatus = sessionData.getOrderStatus();
 			itemStatus = sessionData.getItemStatus();
 		} else {
 			sessionData = new SessionData();
-			// sessionData.setOrderStatus(orderStatus);
-			// sessionData.setItemStatus(itemStatus);
-			// menuItemsForCafe.loadMenuItems(2);
 			sessionData.setMenuItemsForCafe(menuItemsForCafe);
 			sessionData.setGupshupObject(go);
 			Storage.addElementToMap(go.getChannelId(), sessionData);
+
 		}
 		menuItemsForCafe = sessionData.getMenuItemsForCafe();
 		String usermessage = go.getUserMessage();
@@ -219,7 +237,7 @@ public class WorkServlet extends HttpServlet {
 			orderDataDao.saveOrderLines(orderInformation);
 			sessionData.setOrderInformation(orderInformation);
 			log.debug("paymentOption Object" + paymentOption);
-			//sessionData.clearOrderList();
+			// sessionData.clearOrderList();
 			writer.println(paymentOption);
 		}
 
@@ -231,13 +249,15 @@ public class WorkServlet extends HttpServlet {
 			log.debug(" Update of Order status is complete ");
 			tokenDao.createTokens(sessionData.getOrderInformation());
 			log.debug(" Token Creation complete.");
-			//tokenUtils.sendTokenCarolMessage(sessionData.getOrderInformation().getGupshupObject().getContextObj(),
-			//		serverPath, tokenDao.getAllTokensForOrder(sessionData.getOrderInformation().getOrderNum()));
-			//log.debug(" Sending token is completed to facebook. ");
+			// tokenUtils.sendTokenCarolMessage(sessionData.getOrderInformation().getGupshupObject().getContextObj(),
+			// serverPath,
+			// tokenDao.getAllTokensForOrder(sessionData.getOrderInformation().getOrderNum()));
+			// log.debug(" Sending token is completed to facebook. ");
 			Receipt receipt = new Receipt();
 			ReceiptDao receiptDao = new ReceiptDao();
-			receipt = receiptDao.getReceipt(sessionData.getOrderInformation().getOrderNum());			
-			tokenUtils.sendReceipt(sessionData.getOrderInformation().getGupshupObject().getContextObj(), serverPath, receipt);
+			receipt = receiptDao.getReceipt(sessionData.getOrderInformation().getOrderNum());
+			tokenUtils.sendReceipt(sessionData.getOrderInformation().getGupshupObject().getContextObj(), serverPath,
+					receipt);
 			log.debug(" Sending receipt is completed to facebook. ");
 			sessionData.clearOrderList();
 		}

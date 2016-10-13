@@ -5,85 +5,83 @@ import java.util.Date;
 public class User {
 
 	private int userid;
-
-	private String firstName;
-
-	private String lastName;
-
-	private Date dob;
-
-	private String email;
+	private String username;
+	private String sender;
+	private String senderObj;
+	private String contextObj;
+	private String channel;
+	private String lastmsgdttm;
+	private String channelType;
 
 	public int getUserid() {
-
 		return userid;
-
 	}
 
 	public void setUserid(int userid) {
-
 		this.userid = userid;
-
 	}
 
-	public String getFirstName() {
-
-		return firstName;
-
+	public String getUsername() {
+		return username;
 	}
 
-	public void setFirstName(String firstName) {
-
-		this.firstName = firstName;
-
+	public void setUsername(String username) {
+		this.username = username;
 	}
 
-	public String getLastName() {
-
-		return lastName;
-
+	public String getSender() {
+		return sender;
 	}
 
-	public void setLastName(String lastName) {
-
-		this.lastName = lastName;
-
+	public void setSender(String sender) {
+		this.sender = sender;
 	}
 
-	public Date getDob() {
-
-		return dob;
-
+	public String getSenderObj() {
+		return senderObj;
 	}
 
-	public void setDob(Date dob) {
-
-		this.dob = dob;
-
+	public void setSenderObj(String senderObj) {
+		this.senderObj = senderObj;
 	}
 
-	public String getEmail() {
-
-		return email;
-
+	public String getContextObj() {
+		return contextObj;
 	}
 
-	public void setEmail(String email) {
+	public void setContextObj(String contextObj) {
+		this.contextObj = contextObj;
+	}
 
-		this.email = email;
+	public String getChannel() {
+		return channel;
+	}
 
+	public void setChannel(String channel) {
+		this.channel = channel;
+	}
+
+	public String getLastmsgdttm() {
+		return lastmsgdttm;
+	}
+
+	public void setLastmsgdttm(String lastmsgdttm) {
+		this.lastmsgdttm = lastmsgdttm;
+	}
+
+	public String getChannelType() {
+		return channelType;
+	}
+
+	public void setChannelType(String channelType) {
+		this.channelType = channelType;
 	}
 
 	@Override
-
 	public String toString() {
-
-		return "User [userid=" + userid + ", firstName=" + firstName
-
-				+ ", lastName=" + lastName + ", dob=" + dob + ", email="
-
-				+ email + "]";
-
+		return "User [userid=" + userid + ", username=" + username + ", sender=" + sender + ", senderObj=" + senderObj
+				+ ", contextObj=" + contextObj + ", channel=" + channel + ", lastmsgdttm=" + lastmsgdttm
+				+ ", channelType=" + channelType + "]";
 	}
 
 }

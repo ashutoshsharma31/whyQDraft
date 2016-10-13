@@ -8,7 +8,9 @@ public class GupshupObject
 	private String channelId;
 	private String channelType;
 	private String contextObj;
+	private String senderObj;
 	private String sender;
+	private String userName;
 
 	public String getMessageType()
 	{
@@ -69,10 +71,27 @@ public class GupshupObject
 		this.sender = sender;
 	}
 
+	public String getSenderObj() {
+		return senderObj;
+	}
+
+	public void setSenderObj(String senderObj) {
+		this.senderObj = senderObj;
+	}
+
+	public String getUserName() {
+		return userName;
+	}
+
+	public void setUserName(String userName) {
+		this.userName = userName;
+	}
+
 	@Override
 	public String toString() {
 		return "GupshupObject [messageType=" + messageType + ", userMessage=" + userMessage + ", channelId=" + channelId
-				+ ", channelType=" + channelType + ", contextObj=" + contextObj + ", sender=" + sender + "]";
+				+ ", channelType=" + channelType + ", contextObj=" + contextObj + ", senderObj=" + senderObj
+				+ ", sender=" + sender + ", userName=" + userName + "]";
 	}
 
 }

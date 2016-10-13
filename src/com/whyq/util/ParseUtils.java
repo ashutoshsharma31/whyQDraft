@@ -2,6 +2,7 @@ package com.whyq.util;
 
 import javax.servlet.http.HttpServletRequest;
 
+import org.apache.commons.lang.StringUtils;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -18,6 +19,7 @@ public class ParseUtils {
 		String userMessage = messageObjeObject.getString("text");
 		String channelType = senderObjeObject.getString("channeltype");
 		String sender = senderObjeObject.getString("channelid");
+		String username = senderObjeObject.getString("display");
 		System.out.println("SENDER :: "+sender);
 		String channelid = null;
 		if (channelType.equalsIgnoreCase("telegram")) {
@@ -34,7 +36,9 @@ public class ParseUtils {
 			gs.setMessageType(messageType);
 			gs.setUserMessage(userMessage);
 			gs.setContextObj(contextObj);
-			gs.setSender(sender);
+			gs.setSenderObj(senderObj);
+			gs.setSender(StringUtils.replace(sender, "'", "''"));
+			gs.setUserName(username);
 		} catch (Exception ex) {
 			ex.printStackTrace();
 		}
