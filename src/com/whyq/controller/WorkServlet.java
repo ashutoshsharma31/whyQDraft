@@ -2,8 +2,8 @@ package com.whyq.controller;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.net.URLDecoder;
 import java.util.ArrayList;
+import java.util.Currency;
 import java.util.List;
 
 import javax.servlet.ServletException;
@@ -15,7 +15,6 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.log4j.Logger;
 import org.json.JSONObject;
 
-import com.google.gson.Gson;
 import com.whyq.conf.BaseOptions;
 import com.whyq.conf.Quantity;
 import com.whyq.conf.StatusMessages;
@@ -77,7 +76,7 @@ public class WorkServlet extends HttpServlet {
 
 		SessionData sessionData = Storage.getObject(go.getChannelId());
 		MenuItemsForCafe menuItemsForCafe = new MenuItemsForCafe();
-		
+
 		// Check user information
 		UserDao userDao = new UserDao();
 		User user = new User();
@@ -86,14 +85,13 @@ public class WorkServlet extends HttpServlet {
 		user.setSender(go.getSender());
 		user.setSenderObj(go.getSenderObj());
 		user.setUsername(go.getUserName());
-		log.info(" User Object "+user);
-		log.info(" is User present "+userDao.isUserPresent(user.getSender()));
+		log.info(" User Object " + user);
+		log.info(" is User present " + userDao.isUserPresent(user.getSender()));
 		if (userDao.isUserPresent(user.getSender())) {
 			userDao.updateLastMessageDtTm(user);
 		} else {
 			userDao.saveUser(user);
 		}
-		
 
 		// Set Session Object or Update
 		if (sessionData != null) {
@@ -122,7 +120,7 @@ public class WorkServlet extends HttpServlet {
 			String msgid = "CafeMessage";
 			sessionData.setCafeDefine(StatusMessages.CAFE_DEFINE_START);
 			log.debug("this is start of chat !");
-			writer.println(BotUtils.quickReplyTest(message, options, msgid));
+			writer.println(BotUtils.quickReplyTest(message, options, msgid, true, serverPath));
 		} else if (CommonUtils.getEvent(usermessage).equals("MAIN")) {
 			log.debug("************************ 0 ************************");
 			String message = "What would you like to do? ";
@@ -131,7 +129,7 @@ public class WorkServlet extends HttpServlet {
 			BotUtils.checkValidStatus(options);
 			String msgid = "MainMenu";
 			sessionData.setCafeDefine(StatusMessages.CAFE_DEFINE_START);
-			writer.println(BotUtils.quickReplyTest(message, options, msgid));
+			writer.println(BotUtils.quickReplyTest(message, options, msgid, true, serverPath));
 		}
 
 		else if (StatusMessages.CAFE_DEFINE_START.equals(sessionData.getCafeDefine())) {
@@ -151,7 +149,7 @@ public class WorkServlet extends HttpServlet {
 				String msgid = "StartMessage";
 				sessionData.setOrderStatus(StatusMessages.ORDER_START);
 				sessionData.setItemStatus(StatusMessages.ITEM_START);
-				writer.println(BotUtils.quickReplyTest(message, options, msgid));
+				writer.println(BotUtils.quickReplyTest(message, options, msgid, false, serverPath));
 			} else {
 				String message = "Didn't understand your response! Please select the cafe ";
 				ArrayList<String> options = new ArrayList<String>();
@@ -159,7 +157,7 @@ public class WorkServlet extends HttpServlet {
 				BotUtils.checkValidStatus(options);
 				String msgid = "CafeMessage";
 				sessionData.setCafeDefine(StatusMessages.CAFE_DEFINE_START);
-				writer.println(BotUtils.quickReplyTest(message, options, msgid));
+				writer.println(BotUtils.quickReplyTest(message, options, msgid, true, serverPath));
 
 			}
 
@@ -167,20 +165,26 @@ public class WorkServlet extends HttpServlet {
 		// UPDATE Quantity
 		else if (usermessage.trim().contains("Update")) {
 			String itemName = usermessage.substring(7, usermessage.length() - 2);
-			int index = Integer.parseInt(usermessage.substring(usermessage.length() - 1));
+			
+			int index = Integer.parseInt(usermessage.substring(usermessage.lastIndexOf(" ")+ 1));
+			if(sessionData.getMaxReviewOrderCounter()!=0){
+				int currentCount = sessionData.getReviewOrderCounter();
+				index = (9*(currentCount-1))+index-1;
+			}
+			log.info(" INDEX "+ index);
 			ArrayList<String> options = new ArrayList<String>();
 			options = Quantity.getQuantity();
 			BotUtils.checkValidStatus(options);
 			CartItem item = sessionData.getOrderList().get(index - 1);
 			String message = "Please specify new quantity of " + itemName;
-			if(item.getSize()!=null){
-				message = message.concat(" "+item.getSize().getDesc());
+			if (item.getSize() != null) {
+				message = message.concat(" " + item.getSize().getDesc());
 			}
 			sessionData.setItemStatus(StatusMessages.ITEM_NEW_QUANTITY);
 			String msgid = "update";
 			sessionData.setCartItem(item);
 			log.debug(item + "  added as current item !");
-			writer.println(BotUtils.quickReplyTest(message, options, msgid));
+			writer.println(BotUtils.quickReplyTest(message, options, msgid, false, serverPath));
 		}
 
 		// Update Quantity Number
@@ -196,45 +200,78 @@ public class WorkServlet extends HttpServlet {
 			sessionData.initialzeAfterItemAddition();
 			sessionData.setItemStatus(StatusMessages.ITEM_COMPLETE);
 			sessionData.setOrderStatus(StatusMessages.ORDER_IN_PROGRESS);
-			writer.println(BotUtils.quickReplyTest(message, options, msgid));
+			writer.println(BotUtils.quickReplyTest(message, options, msgid, false, serverPath));
 		}
 		// DELETE ITEM
 		else if (usermessage.contains("Delete")) {
 			String itemName = usermessage.substring(7);
-			int index = Integer.parseInt(usermessage.substring(usermessage.length() - 1));
+			int index = Integer.parseInt(usermessage.substring(usermessage.lastIndexOf(" ")+ 1));
+			
+			if(sessionData.getMaxReviewOrderCounter()!=0){
+				int currentCount = sessionData.getReviewOrderCounter();
+				index = (9*(currentCount-1))+index-1;
+			}
+			log.info(" INDEX "+ index);
+			
 			sessionData.removeOrderFromListUsingIndex(index - 1);
 			String message = "Item deleted ..";
 			String msgid = "ITEM_DELETED";
 			ArrayList<String> options = new ArrayList<String>();
-			if(sessionData.getOrderList().size()==0){
+			if (sessionData.getOrderList().size() == 0) {
 				message = message.concat(" Nothing in cart now... what would you like to order");
 				options = menuItemsForCafe.getStartOptions();
-			}
-			else{				
+			} else {
 				options = menuItemsForCafe.getReviewOrder();
 			}
-			
-			
+
 			BotUtils.checkValidStatus(options);
 			sessionData.initialzeAfterItemAddition();
 			sessionData.setItemStatus(StatusMessages.ITEM_COMPLETE);
 			sessionData.setOrderStatus(StatusMessages.ORDER_IN_PROGRESS);
-			writer.println(BotUtils.quickReplyTest(message, options, msgid));
+			writer.println(BotUtils.quickReplyTest(message, options, msgid, false, serverPath));
 		}
 
 		// REVIEW ORDER
 		else if (usermessage.contains("Review Order")) {
 			List<CartItem> orderList = sessionData.getOrderList();
-			String message = "";
-			for (CartItem order : orderList) {
-				log.debug(order);
-				message += order;
+
+			if (orderList.size() <= 10) {
+				JSONObject coralObject = BotUtils.coralView(orderList, serverPath);
+				log.debug("Coral Object" + coralObject);
+				writer.println(coralObject);
+			} else {
+
+				
+				int maxReviewCounter = orderList.size() / 9;
+				if (orderList.size() % 9 == 0) {
+					maxReviewCounter = +1;
+				}
+				sessionData.setReviewOrderCounter(1);
+				sessionData.setMaxReviewOrderCounter(maxReviewCounter);
+				JSONObject coralObject = BotUtils.coralViewFirstNineOrder(orderList, serverPath,
+						sessionData.getMaxReviewOrderCounter(), sessionData.getReviewOrderCounter());
+				log.debug("Coral Object" + coralObject);
+				writer.println(coralObject);
+				//BotUtils.sendNextPreMessage(sessionData, orderList.size() / 10, serverPath);
+
 			}
-			// String[] options = menuItemsForCafe.getMenuItems("Review Order");
-			JSONObject coralObject = BotUtils.coralView(orderList, serverPath);
+
+		}
+		
+		else if(usermessage.contains("Next Items >>") || usermessage.contains("<< Previous Items")){
+			List<CartItem> orderList = sessionData.getOrderList();
+		
+			int currentReviewCounter = sessionData.getReviewOrderCounter();
+			if(usermessage.contains("Next Items >>")){
+				currentReviewCounter++;
+			}else{
+				currentReviewCounter--;
+			}
+			sessionData.setReviewOrderCounter(currentReviewCounter);
+			
+			JSONObject coralObject = BotUtils.coralViewFirstNineOrder(orderList, serverPath,sessionData.getMaxReviewOrderCounter(), sessionData.getReviewOrderCounter());
 			log.debug("Coral Object" + coralObject);
 			writer.println(coralObject);
-
 		}
 
 		else if (usermessage.contains("Confirm Order")) {
@@ -305,7 +342,7 @@ public class WorkServlet extends HttpServlet {
 					BotUtils.checkValidStatus(options);
 					sessionData.setItemStatus(StatusMessages.ITEM_SINGLE_SIZE);
 					sessionData.setOrderStatus(StatusMessages.ORDER_IN_PROGRESS);
-					writer.println(BotUtils.quickReplyTest(message, options, msgid));
+					writer.println(BotUtils.quickReplyTest(message, options, msgid, false, serverPath));
 				} else {
 					// Sizable Item quantity more than 1
 					log.debug("************************ 5 ************************");
@@ -336,7 +373,7 @@ public class WorkServlet extends HttpServlet {
 						BotUtils.checkValidStatus(options);
 						sessionData.setItemStatus(StatusMessages.ITEM_COMPLETE);
 						sessionData.setOrderStatus(StatusMessages.ORDER_IN_PROGRESS);
-						writer.println(BotUtils.quickReplyTest(message, options, msgid));
+						writer.println(BotUtils.quickReplyTest(message, options, msgid, false, serverPath));
 					} else {
 						// all the items except last
 						log.debug(
@@ -356,7 +393,7 @@ public class WorkServlet extends HttpServlet {
 							String msgid = "ITEM_MULTIPLE_SIZE_COUNTER";
 							// sessionData.setSizeCounter(sizeCounter+1);
 							sessionData.setItemStatus(StatusMessages.ITEM_MULTIPLE_SIZE_COUNTER);
-							writer.println(BotUtils.quickReplyTest(message, options, msgid));
+							writer.println(BotUtils.quickReplyTest(message, options, msgid, false, serverPath));
 						} else {
 							log.debug("************************ 1000 ************************");
 							log.debug(item.getMenuItem() + " " + Integer.parseInt(usermessage) + " "
@@ -369,7 +406,7 @@ public class WorkServlet extends HttpServlet {
 							sessionData.setSizeCounter(sizeCounter + 1);
 							String msgid = "ITEM_MULTIPLE_SIZE_COUNTER";
 							String message = "How many " + sizeList.get(sizeCounter + 1).getDesc() + " ? ";
-							writer.println(BotUtils.quickReplyTest(message, options, msgid));
+							writer.println(BotUtils.quickReplyTest(message, options, msgid, false, serverPath));
 						}
 
 						sessionData.setOrderStatus(StatusMessages.ORDER_IN_PROGRESS);
@@ -389,7 +426,7 @@ public class WorkServlet extends HttpServlet {
 				sessionData.addItemToCart(item);
 				sessionData.setItemStatus(StatusMessages.ITEM_COMPLETE);
 				sessionData.setOrderStatus(StatusMessages.ORDER_IN_PROGRESS);
-				writer.println(BotUtils.quickReplyTest(message, options, msgid));
+				writer.println(BotUtils.quickReplyTest(message, options, msgid, false, serverPath));
 			}
 
 		}
@@ -415,7 +452,7 @@ public class WorkServlet extends HttpServlet {
 				BotUtils.checkValidStatus(options);
 				sessionData.setItemStatus(StatusMessages.ITEM_COMPLETE);
 				sessionData.setOrderStatus(StatusMessages.ORDER_IN_PROGRESS);
-				writer.println(BotUtils.quickReplyTest(message, options, msgid));
+				writer.println(BotUtils.quickReplyTest(message, options, msgid, false, serverPath));
 			} else {
 				log.debug("************************ 16 ************************");
 				log.debug("SIZE NOT IDENTIFIED ... HANDLE IT");
@@ -438,7 +475,7 @@ public class WorkServlet extends HttpServlet {
 				String message = "Please specify quantity of " + usermessage;
 				sessionData.setItemStatus(StatusMessages.ITEM_QUANTITY);
 				sessionData.setCartItem(new CartItem(menuItem));
-				writer.println(BotUtils.quickReplyTest(message, options, msgid));
+				writer.println(BotUtils.quickReplyTest(message, options, msgid, false, serverPath));
 
 			} else {
 				log.debug("************************ 19 ************************");
@@ -449,7 +486,7 @@ public class WorkServlet extends HttpServlet {
 				BotUtils.checkValidStatus(options);
 				String message = "Which " + usermessage + " you like to order ?";
 				msgid = "ParentProduct";
-				writer.println(BotUtils.quickReplyTest(message, options, msgid));
+				writer.println(BotUtils.quickReplyTest(message, options, msgid, false, serverPath));
 			}
 
 		} else {
@@ -460,7 +497,7 @@ public class WorkServlet extends HttpServlet {
 			BotUtils.checkValidStatus(options);
 			String msgid = "CafeMessage";
 			sessionData.setCafeDefine(StatusMessages.CAFE_DEFINE_START);
-			writer.println(BotUtils.quickReplyTest(message, options, msgid));
+			writer.println(BotUtils.quickReplyTest(message, options, msgid, false, serverPath));
 		}
 
 		// log.debug(sessionData);

@@ -6,6 +6,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.List;
 import java.util.TimeZone;
 
@@ -28,14 +29,31 @@ import com.whyq.model.ReceiptElement;
 import com.whyq.model.Token;
 import com.whyq.session.SessionData;
 
+import okhttp3.MediaType;
+import okhttp3.RequestBody;
+
 public class BotUtils {
 	static Logger log = Logger.getLogger(BotUtils.class.getName());
 
-	public static JSONObject quickReplyTest(String message, ArrayList<String> options, String msgid) {
+	public static JSONObject quickReplyTest(String message, ArrayList<String> options, String msgid, boolean addImage,
+			String serverPath) {
 		// String[] str = { "Red", "Green", "Yellow", "Blue" };
 		JSONObject startMessage = new JSONObject();
+
+		ArrayList<JSONObject> optionsJson = new ArrayList<JSONObject>();
+		if (addImage) {
+			for (String str : options) {
+				optionsJson.add(new JSONObject().put("type", "text").put("title", str).put("iconurl",
+						serverPath + "/img/tiny_" + str.replace(" ", "_").toLowerCase() + ".jpg"));
+			}
+		} else {
+			for (String str : options) {
+				optionsJson.add(new JSONObject().put("type", "text").put("title", str));
+			}
+		}
+
 		startMessage.put("type", "quick_reply")
-				.put("content", new JSONObject().put("type", "text").put("text", message)).put("options", options)
+				.put("content", new JSONObject().put("type", "text").put("text", message)).put("options", optionsJson)
 				.put("msgid", msgid);
 
 		return startMessage;
@@ -54,9 +72,9 @@ public class BotUtils {
 			options.add(new JSONObject().put("type", "text").put("title", "Confirm Order"));
 			JSONObject catItem = null;
 			if (order.getSize() != null) {
-				catItem = new JSONObject()
-						.put("title", order.getMenuItem().getName()).put("subtitle", "Size: " + order.getSize().getDesc()
-								+ " Quantity:" + order.getQuantity() + " Price:" + order.getTotalPrice())
+				catItem = new JSONObject().put("title", order.getMenuItem().getName())
+						.put("subtitle", "Size: " + order.getSize().getDesc() + " Quantity:" + order.getQuantity()
+								+ " Price:" + order.getTotalPrice())
 						.put("options", options);
 			} else {
 				catItem = new JSONObject().put("title", order.getMenuItem().getName())
@@ -71,6 +89,74 @@ public class BotUtils {
 		my.put("items", itemObject);
 
 		return my;
+	}
+
+	public static String sendOrderListAsText(List<CartItem> orderList, String serverPath, int maxCount,
+			int currentCount) {
+		String message = null;
+		int counter = 1;
+		for (CartItem cartItem : orderList) {
+			message += (counter++) + " " + cartItem.getMenuItem().getName() + " " + cartItem.getSize() + " "
+					+ cartItem.getQuantity();
+		}
+
+		return message;
+
+	}
+
+	public static JSONObject coralViewFirstNineOrder(List<CartItem> orderList, String serverPath, int maxCount,
+			int currentCount) {
+		JSONObject my = new JSONObject();
+		my.put("type", "catalogue").put("msgid", "coralview");
+		ArrayList<JSONObject> itemObject = new ArrayList<JSONObject>();
+
+		int counter = (currentCount - 1) * 10;
+		int limit = counter + 9;
+		log.info("Printing coral view for review order from index " + counter + " to " + limit);
+		for (int i = counter; i < orderList.size() && i < limit; i++) {
+			CartItem order = orderList.get(i);
+
+			ArrayList<JSONObject> options = new ArrayList<JSONObject>();
+			options.add(new JSONObject().put("type", "text").put("title", "Update " + order.getMenuItem().getName()));
+			options.add(new JSONObject().put("type", "text").put("title", "Delete " + order.getMenuItem().getName()));
+			options.add(new JSONObject().put("type", "text").put("title", "Confirm Order"));
+			JSONObject catItem = null;
+			if (order.getSize() != null) {
+				catItem = new JSONObject().put("title", order.getMenuItem().getName())
+						.put("subtitle", "Size: " + order.getSize().getDesc() + " Quantity:" + order.getQuantity()
+								+ " Price:" + order.getTotalPrice())
+						.put("options", options);
+			} else {
+				catItem = new JSONObject().put("title", order.getMenuItem().getName())
+						.put("subtitle", " Quantity:" + order.getQuantity() + " Price:" + order.getTotalPrice())
+						.put("options", options);
+			}
+			catItem.put("imgurl", serverPath + "/img/" + order.getMenuItem().getItemid() + ".jpg");
+			itemObject.add(catItem);
+			counter++;
+		}
+
+		ArrayList<JSONObject> nextPreOption = new ArrayList<JSONObject>();
+
+		if (currentCount <= maxCount) {
+			nextPreOption.add(new JSONObject().put("type", "text").put("title", "Next Items >>"));
+		}
+		if (currentCount > 1) {
+			nextPreOption.add(new JSONObject().put("type", "text").put("title", "<< Previous Items"));
+		}
+		nextPreOption.add(new JSONObject().put("type", "text").put("title", "Confirm Order"));
+
+		JSONObject titileNextPre = new JSONObject();
+		titileNextPre.put("title", "More Options");
+		titileNextPre.put("subtitle", "Choose from Below");
+		titileNextPre.put("options", nextPreOption);
+		titileNextPre.put("imgurl", serverPath + "/img/moreoptions.jpg");
+
+		itemObject.add(titileNextPre);
+		my.put("items", itemObject);
+
+		return my;
+
 	}
 
 	public static JSONObject paymentOptions(String serverPath, OrderInformation orderInformation) {
@@ -207,6 +293,43 @@ public class BotUtils {
 					+ options.size());
 
 		}
+	}
+
+	public static void sendNextPreMessage(SessionData sessionData, int currentCount, String serverPath) {
+		log.info("in sendNextPreMessage " + sessionData.getGupshupObject().getContextObj());
+		String contextObject = sessionData.getGupshupObject().getContextObj();
+		int maxCount = sessionData.getMaxReviewOrderCounter();
+		ArrayList<String> options = new ArrayList<String>();
+		if (currentCount == 1) {
+			options.add(">> Next 10");
+		} else if (maxCount == currentCount) {
+			options.add("<< Previous 10");
+		} else {
+			options.add("<< Previous 10");
+			options.add(">> Next 10");
+		}
+		options.add(" Main Menu ");
+		String message = " Please opt for the options ";
+		String msgid = "ReviewOrder";
+		String URL = "https://api.gupshup.io/sm/api/bot/WhyQDraft/msg";
+		String body = "context=" + contextObject + "&message="
+				+ quickReplyTest(message, options, msgid, false, serverPath);
+
+		System.out.println(body);
+		try {
+			okhttp3.OkHttpClient client = new okhttp3.OkHttpClient();
+			okhttp3.MediaType mediaType = MediaType.parse("application/x-www-form-urlencoded");
+			RequestBody body1 = RequestBody.create(mediaType, body);
+			okhttp3.Request request1 = new okhttp3.Request.Builder().url(URL)
+					.header("apikey", "4f331fc14fb34579c52dd66a805ae1c8").post(body1).build();
+			okhttp3.Response response = client.newCall(request1).execute();
+			System.out.println(response.code());
+			;
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		log.info("End sendMessage " + contextObject);
 	}
 
 }

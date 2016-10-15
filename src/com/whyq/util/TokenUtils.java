@@ -4,7 +4,6 @@ import java.util.List;
 
 import org.apache.log4j.Logger;
 
-import com.whyq.model.OrderInformation;
 import com.whyq.model.Receipt;
 import com.whyq.model.Token;
 

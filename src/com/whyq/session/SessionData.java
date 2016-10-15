@@ -26,6 +26,8 @@ public class SessionData {
 	private MenuItemsForCafe menuItemsForCafe;
 	private int cafeid;
 	private OrderInformation orderInformation;
+	private int reviewOrderCounter;
+	private int maxReviewOrderCounter;
 
 	public SessionData() {
 		super();
@@ -207,13 +209,30 @@ public class SessionData {
 		this.cafeDefine = cafeDefine;
 	}
 
+	public int getReviewOrderCounter() {
+		return reviewOrderCounter;
+	}
+
+	public void setReviewOrderCounter(int reviewOrderCounter) {
+		this.reviewOrderCounter = reviewOrderCounter;
+	}
+
+	public int getMaxReviewOrderCounter() {
+		return maxReviewOrderCounter;
+	}
+
+	public void setMaxReviewOrderCounter(int maxReviewOrderCounter) {
+		this.maxReviewOrderCounter = maxReviewOrderCounter;
+	}
+
 	@Override
 	public String toString() {
 		return "SessionData [cartItem=" + cartItem + ", itemQuantity=" + itemQuantity + ", remQuantity=" + remQuantity
 				+ ", orderStatus=" + orderStatus + ", itemStatus=" + itemStatus + ", cafeDefine=" + cafeDefine
 				+ ", gupshupObject=" + gupshupObject + ", orderList=" + orderList + ", sizesList=" + sizesList
 				+ ", sizeCounter=" + sizeCounter + ", menuItemsForCafe=" + menuItemsForCafe + ", cafeid=" + cafeid
-				+ ", orderInformation=" + orderInformation + "]";
+				+ ", orderInformation=" + orderInformation + ", reviewOrderCounter=" + reviewOrderCounter
+				+ ", maxReviewOrderCounter=" + maxReviewOrderCounter + "]";
 	}
 
 }
