@@ -69,7 +69,7 @@ public class BotUtils {
 			ArrayList<JSONObject> options = new ArrayList<JSONObject>();
 			options.add(new JSONObject().put("type", "text").put("title", "Update " + order.getMenuItem().getName()));
 			options.add(new JSONObject().put("type", "text").put("title", "Delete " + order.getMenuItem().getName()));
-			options.add(new JSONObject().put("type", "text").put("title", "Confirm Order"));
+			options.add(new JSONObject().put("type", "text").put("title", "Confirm/Cont. Order"));
 			JSONObject catItem = null;
 			if (order.getSize() != null) {
 				catItem = new JSONObject().put("title", order.getMenuItem().getName())
@@ -110,7 +110,7 @@ public class BotUtils {
 		my.put("type", "catalogue").put("msgid", "coralview");
 		ArrayList<JSONObject> itemObject = new ArrayList<JSONObject>();
 
-		int counter = (currentCount - 1) * 10;
+		int counter = ((currentCount - 1) * 9);
 		int limit = counter + 9;
 		log.info("Printing coral view for review order from index " + counter + " to " + limit);
 		for (int i = counter; i < orderList.size() && i < limit; i++) {
@@ -119,7 +119,7 @@ public class BotUtils {
 			ArrayList<JSONObject> options = new ArrayList<JSONObject>();
 			options.add(new JSONObject().put("type", "text").put("title", "Update " + order.getMenuItem().getName()));
 			options.add(new JSONObject().put("type", "text").put("title", "Delete " + order.getMenuItem().getName()));
-			options.add(new JSONObject().put("type", "text").put("title", "Confirm Order"));
+			options.add(new JSONObject().put("type", "text").put("title", "Confirm/Cont. Order"));
 			JSONObject catItem = null;
 			if (order.getSize() != null) {
 				catItem = new JSONObject().put("title", order.getMenuItem().getName())

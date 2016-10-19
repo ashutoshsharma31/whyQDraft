@@ -169,7 +169,7 @@ public class WorkServlet extends HttpServlet {
 			int index = Integer.parseInt(usermessage.substring(usermessage.lastIndexOf(" ")+ 1));
 			if(sessionData.getMaxReviewOrderCounter()!=0){
 				int currentCount = sessionData.getReviewOrderCounter();
-				index = (9*(currentCount-1))+index-1;
+				index = (9*(currentCount-1))+index;
 			}
 			log.info(" INDEX "+ index);
 			ArrayList<String> options = new ArrayList<String>();
@@ -239,9 +239,7 @@ public class WorkServlet extends HttpServlet {
 				JSONObject coralObject = BotUtils.coralView(orderList, serverPath);
 				log.debug("Coral Object" + coralObject);
 				writer.println(coralObject);
-			} else {
-
-				
+			} else {				
 				int maxReviewCounter = orderList.size() / 9;
 				if (orderList.size() % 9 == 0) {
 					maxReviewCounter = +1;
@@ -252,10 +250,21 @@ public class WorkServlet extends HttpServlet {
 						sessionData.getMaxReviewOrderCounter(), sessionData.getReviewOrderCounter());
 				log.debug("Coral Object" + coralObject);
 				writer.println(coralObject);
-				//BotUtils.sendNextPreMessage(sessionData, orderList.size() / 10, serverPath);
-
 			}
 
+		}
+		
+		else if(usermessage.contains("Confirm/Cont. Order")){
+			
+			menuItemsForCafe.loadMenuItems(sessionData.getCafeid());
+			String message = "Please select next option !";
+			ArrayList<String> options = new ArrayList<String>();
+			options = menuItemsForCafe.getReviewOrder();
+			BotUtils.checkValidStatus(options);
+			String msgid = "StartMessage";
+			sessionData.setOrderStatus(StatusMessages.ORDER_START);
+			sessionData.setItemStatus(StatusMessages.ITEM_START);
+			writer.println(BotUtils.quickReplyTest(message, options, msgid, false, serverPath));
 		}
 		
 		else if(usermessage.contains("Next Items >>") || usermessage.contains("<< Previous Items")){
