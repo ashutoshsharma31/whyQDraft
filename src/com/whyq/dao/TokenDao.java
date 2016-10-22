@@ -9,12 +9,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.log4j.Logger;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import com.whyq.controller.WorkServlet;
 import com.whyq.model.CartItem;
 import com.whyq.model.OrderInformation;
 import com.whyq.model.Token;
 import com.whyq.util.DbUtil;
+import com.whyq.util.ResultSetConverterUtil;
 
 public class TokenDao {
 	static Logger log = Logger.getLogger(TokenDao.class.getName());
@@ -139,5 +143,123 @@ public class TokenDao {
 		log.info("Method createTokens END ");
 	}
 	
+	
+	public JSONArray getAllOpenTokensForCafe(int cafeid) {
+
+		ResultSet rs = null;
+		Statement stmt =null;
+		JSONArray tokenJsonArray = new JSONArray();
+		try {
+			
+			String query = " SELECT tokenid,                  "+
+					"        mi.name,                  "+
+					"        ol.orderid,               "+
+					"        ol.quantity,              "+
+					"        od.username,              "+
+					"        t.status                    "+
+					" FROM token t,                    "+
+					"      orderline ol,               "+
+					"      menuitem mi,                "+
+					"      orderdata od                "+
+					" WHERE t.orderlineid = ol.orderlineid "+
+					"   AND mi.itemid = ol.itemid      "+
+					"   AND od.ordernum=ol.orderid     "+
+					"   AND t.status <> 'COMPLETE'     "+
+					"   AND od.cafeid="+cafeid+"";
+			stmt = connection.createStatement();
+			rs = stmt.executeQuery(query);
+			
+			try {
+				tokenJsonArray = ResultSetConverterUtil.convert(rs);
+			} catch (JSONException e) { 
+				e.printStackTrace();
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		finally {
+			try {
+				stmt.close();
+				rs.close();
+			} catch (SQLException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		return tokenJsonArray;
+	}
+	
+	public void updateTokenToComplete(int tokenid) {
+		log.info("Method updateToken Start "+tokenid);
+		int records = 0;
+		try {
+			String query = "update token set status = ? where tokenid = ?";
+			PreparedStatement preparedStatement = connection.prepareStatement(query);
+			preparedStatement.setString(1, "COMPLETE");
+			preparedStatement.setInt(2, tokenid);
+			records  = preparedStatement.executeUpdate();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		log.info("Method updateToken End "+records +" updated in token");
+	}	
+	
+	public JSONArray getCountPendingTokens(int cafeid) {
+		ResultSet rs = null;
+		PreparedStatement preparedStatement =null;
+		JSONArray pendingTokensJsonArray = new JSONArray();
+		
+		try {
+			String query = 
+					" SELECT mi.name, count(t.tokenid) as pendingtokens      "+
+					" FROM token t,                                                      "+
+					"      orderline ol,                                                 "+
+					"      menuitem mi,                                                  "+
+					"      orderdata od                                                  "+
+					" WHERE t.tokenid = ol.orderlineid                                   "+
+					"   AND mi.itemid = ol.itemid                                        "+
+					"   AND od.ordernum = ol.orderid                                     "+
+					"   AND od.cafeid = "+cafeid+"  AND t.status <> 'COMPLETE' group by name   ";
+			preparedStatement = connection.prepareStatement(query);
+			
+			
+			rs = preparedStatement.executeQuery(query);
+			try {
+				//System.out.println(rs.next());
+				//pendingTokensJsonArray = ResultSetConverterUtil.convert(rs);
+				 while(rs.next()) {
+					 JSONObject jsonObject =  new JSONObject();
+					 jsonObject.put("name",rs.getString("name"));
+					 jsonObject.put("pendingtokens",rs.getString("pendingtokens"));
+					 pendingTokensJsonArray.put(jsonObject);
+				 }
+				
+			} catch (JSONException e) { 
+				e.printStackTrace();
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		finally {
+			try {
+				if(preparedStatement!=null){
+					preparedStatement.close();
+				}
+				if(rs!=null){
+					rs.close();
+				}
+			} catch (SQLException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		return pendingTokensJsonArray;
+	}	
 
 }
